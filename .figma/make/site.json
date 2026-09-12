@@ -1,0 +1,10 @@
+{
+  "description": "Streamline your salon and barber bookings with a mobile-first platform that offers quick service selection, easy scheduling, and secure payments for a seamless experience.",
+  "robots": {
+    "index": false
+  },
+  "accessibility": {
+    "addBypassLinks": false,
+    "ignoreReducedMotion": false
+  }
+}

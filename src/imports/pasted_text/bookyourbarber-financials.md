@@ -1,0 +1,1011 @@
+# BOOKYOURBARBER — PAYMENTS, REVENUE, REFUNDS & FINANCIAL OPERATIONS
+
+Continue the existing BookYourBarber product.
+
+Do NOT redesign the existing dashboard, calendar, appointments, services, staff or settings systems.
+
+This phase designs the financial and payment experience that connects directly to the existing booking system.
+
+The goal is to let a salon owner clearly understand:
+
+How much was charged
+How much was paid
+What is outstanding
+How customers paid
+What was refunded
+What cancellation fees were generated
+What expenses were recorded
+What the salon's operating result is
+
+The financial experience must remain SIMPLE.
+
+BookYourBarber is NOT a full accounting platform.
+
+---
+
+# 1. FINANCIAL INFORMATION ARCHITECTURE
+
+Create:
+
+Payments
+Refunds
+Revenue
+Expenses
+Financial Reports
+
+Inside the salon application.
+
+---
+
+# 2. PAYMENT STATUS MODEL
+
+Keep appointment status and payment status completely separate.
+
+Appointment status:
+
+BOOKED
+CONFIRMED
+COMPLETED
+CANCELLED
+NO_SHOW
+
+Payment status:
+
+UNPAID
+PARTIALLY_PAID
+PAID
+REFUND_PROCESSING
+REFUNDED
+PAYMENT_FAILED
+
+Never infer one state from the other.
+
+---
+
+# 3. PAYMENT METHODS
+
+Support:
+
+Cash
+Card
+Yoco
+PayShap
+Other
+
+Do not hard-code any payment provider into the architecture.
+
+The UI should treat payment providers as integrations.
+
+Do not introduce Stripe branding.
+
+---
+
+# 4. PAYMENT RECORD
+
+Each payment should show:
+
+Payment reference
+Booking reference
+Customer
+Salon
+Amount
+Payment method
+Date/time
+Status
+
+Example:
+
+Booking:
+BYB-20260908-00482
+
+Payment:
+R300
+
+Method:
+Yoco
+
+Status:
+Successful
+
+---
+
+# 5. PAYMENT HISTORY
+
+Create a Payments page.
+
+Show:
+
+Date
+Booking reference
+Customer
+Amount
+Method
+Status
+
+Filters:
+
+Today
+This week
+This month
+Custom
+
+Payment status filter:
+
+Successful
+Pending
+Failed
+Refunded
+Partially refunded
+
+---
+
+# 6. PAYMENT SEARCH
+
+Allow searching by:
+
+Booking reference
+Customer name
+Phone
+Email
+Payment reference
+
+Example:
+
+BYB-20260908-00482
+
+must locate the payment.
+
+---
+
+# 7. APPOINTMENT PAYMENT SECTION
+
+The existing Appointment Detail screen should connect to payment information.
+
+Example:
+
+Charged:
+R300
+
+Paid:
+R200
+
+Outstanding:
+R100
+
+Payment history:
+
+R100 — Cash — Successful
+R100 — Yoco — Successful
+
+Do not replace the history with only a balance figure.
+
+---
+
+# 8. PARTIAL PAYMENT FLOW
+
+Example:
+
+Appointment:
+R300
+
+Customer pays:
+R100
+
+Show:
+
+Paid:
+R100
+
+Outstanding:
+R200
+
+Payment status:
+
+PARTIALLY PAID
+
+Then allow another payment.
+
+After the final payment:
+
+Paid:
+R300
+
+Outstanding:
+R0
+
+Payment status:
+PAID
+
+---
+
+# 9. PAY-AT-SHOP FLOW
+
+If a customer chose:
+
+PAY AT SHOP
+
+the appointment is:
+
+CONFIRMED
+
+Payment is:
+
+UNPAID
+
+Show:
+
+Amount due at shop:
+R300
+
+The owner can record the payment later.
+
+---
+
+# 10. ONLINE PAYMENT FLOW
+
+If customer selected:
+
+PAY ONLINE
+
+the booking must be fully paid before confirmation.
+
+Show:
+
+Amount:
+R300
+
+Paid:
+R300
+
+Status:
+PAID
+
+Do not create a confirmed online booking when payment verification has failed.
+
+---
+
+# 11. REFUNDS
+
+Create a dedicated Refunds section.
+
+Refund record:
+
+Refund reference
+Booking reference
+Customer
+Original payment
+Original amount
+Cancellation fee
+Refund amount
+Refund status
+Requested date
+Completed date
+
+Refund statuses:
+
+REQUESTED
+PROCESSING
+COMPLETED
+FAILED
+
+---
+
+# 12. CUSTOMER CANCELLATION REFUND
+
+More than 24 hours:
+
+10% cancellation fee
+
+Less than 24 hours:
+
+18% cancellation fee
+
+Example:
+
+Booking:
+R500
+
+More than 24 hours:
+
+Cancellation fee:
+R50
+
+Refund:
+R450
+
+Less than 24 hours:
+
+Cancellation fee:
+R90
+
+Refund:
+R410
+
+Show the calculation clearly.
+
+---
+
+# 13. SALON CANCELLATION REFUND
+
+If the salon cancels a paid booking:
+
+Customer cancellation fee:
+R0
+
+Eligible refund:
+Full amount
+
+Show:
+
+Cancelled by:
+Salon
+
+Refund:
+Full eligible amount
+
+The interface must clearly distinguish this from customer cancellation.
+
+---
+
+# 14. REFUND PROCESSING
+
+Show:
+
+Refund requested
+↓
+Processing
+↓
+Completed
+
+Example:
+
+Refund:
+R270
+
+Status:
+Processing
+
+Expected:
+3–5 business days
+
+Do not promise a guaranteed settlement time from BookYourBarber.
+
+---
+
+# 15. REFUND FAILURE
+
+If refund fails:
+
+Show:
+
+"Refund could not be completed."
+
+Display:
+
+Booking reference
+Refund reference
+Amount
+Failure state
+
+Action:
+
+"Contact BookYourBarber support"
+
+Do not mark the refund as completed.
+
+---
+
+# 16. REVENUE DASHBOARD
+
+Create a financial overview.
+
+Today's view:
+
+Charged
+Paid
+Outstanding
+Refunded
+Expenses
+Operating result
+
+Example:
+
+Charged:
+R2,500
+
+Paid:
+R2,000
+
+Outstanding:
+R500
+
+Refunded:
+R150
+
+Expenses:
+R600
+
+Operating result:
+R1,250
+
+Use clear language.
+
+---
+
+# 17. REVENUE FILTERS
+
+Support:
+
+Today
+Yesterday
+This week
+This month
+Last month
+Custom range
+
+Do not overload the screen with charts.
+
+---
+
+# 18. REVENUE BY STAFF
+
+Show revenue generated by staff.
+
+Example:
+
+Thabo:
+R600
+
+Sanele:
+R450
+
+Lerato:
+R800
+
+Clearly define this as revenue associated with their completed appointments.
+
+Do not invent commission calculations.
+
+Commissions are not part of this version.
+
+---
+
+# 19. REVENUE BY BOOKING SOURCE
+
+Show:
+
+ONLINE
+QR
+MANUAL
+
+Example:
+
+Online:
+72%
+
+QR:
+18%
+
+Manual:
+10%
+
+This is especially important because BookYourBarber's main business promise is improving online booking.
+
+---
+
+# 20. REVENUE BY PAYMENT METHOD
+
+Show:
+
+Cash
+Card
+Yoco
+PayShap
+Other
+
+Example:
+
+Cash:
+R1,200
+
+Card:
+R800
+
+Yoco:
+R450
+
+PayShap:
+R250
+
+Other:
+R100
+
+---
+
+# 21. OUTSTANDING PAYMENTS
+
+Create an actionable outstanding-payments view.
+
+Show:
+
+Customer
+Booking reference
+Appointment
+Amount due
+Payment status
+
+Example:
+
+Lerato M.
+BYB-20260908-00482
+R150 outstanding
+
+Action:
+
+"Record payment"
+
+---
+
+# 22. EXPENSES
+
+Create Expenses page.
+
+Each expense:
+
+Category
+Description
+Amount
+Date
+
+Categories:
+
+Rent
+Electricity
+Products
+Salaries
+Marketing
+Transport
+Other
+
+---
+
+# 23. ADD EXPENSE
+
+Form:
+
+Category
+Amount
+Date
+Description
+
+CTA:
+
+"Save expense"
+
+---
+
+# 24. EDIT EXPENSE
+
+Allow editing expenses.
+
+If the user changes a saved expense:
+
+show appropriate confirmation where needed.
+
+---
+
+# 25. DELETE EXPENSE
+
+Deleting an expense is destructive.
+
+Require confirmation:
+
+"Delete this expense?"
+
+Show:
+
+Category
+Amount
+Date
+
+Actions:
+
+Delete
+Cancel
+
+---
+
+# 26. EXPENSE SUMMARY
+
+Show:
+
+Total expenses
+Expenses by category
+Expenses over time
+
+Keep the presentation simple.
+
+---
+
+# 27. OPERATING RESULT
+
+Calculate:
+
+Revenue
+− Expenses
+==========
+
+Operating result
+
+Make it clear this is based on BookYourBarber's recorded business activity.
+
+Do not present the system as formal accounting software.
+
+---
+
+# 28. FINANCIAL REPORTS
+
+Create reports for:
+
+Revenue
+Payments
+Outstanding payments
+Refunds
+Expenses
+Booking source
+Payment methods
+Staff performance
+
+---
+
+# 29. REPORT EXPORT
+
+Allow:
+
+CSV
+PDF
+
+Export:
+
+Payments
+Appointments
+Revenue
+Expenses
+Refunds
+
+Show:
+
+"Preparing export..."
+
+then:
+
+"Download report"
+
+---
+
+# 30. BOOKING REFERENCE THROUGHOUT FINANCE
+
+The human-readable booking reference must appear prominently:
+
+BYB-YYYYMMDD-XXXXX
+
+Use it in:
+
+Payments
+Refunds
+Appointments
+Customer support
+Reports
+
+---
+
+# 31. PAYMENT PROVIDER STATUS
+
+Create provider-neutral states:
+
+Connected
+Not connected
+Connection failed
+Verification required
+
+Do not show specific provider branding unless a provider has actually been configured.
+
+---
+
+# 32. PAYMENT CONNECTION
+
+Payment settings should allow:
+
+Connect payment provider
+
+When successful:
+
+"Payment provider connected."
+
+When failed:
+
+"Unable to connect payment provider."
+
+Action:
+
+"Try again"
+
+---
+
+# 33. PAYMENT FAILURE
+
+If an online booking payment fails:
+
+Payment failed
+
+Booking remains unconfirmed.
+
+The slot is released according to the booking hold policy.
+
+Do not create a successful booking from a failed payment.
+
+---
+
+# 34. DUPLICATE PAYMENT PROTECTION
+
+If the user attempts to submit the same payment twice:
+
+"Payment already processing."
+
+Disable duplicate submission.
+
+Show the payment status clearly.
+
+---
+
+# 35. REFUND SEARCH
+
+Refunds must be searchable by:
+
+Booking reference
+Refund reference
+Customer
+Payment reference
+
+Example:
+
+BYB-20260908-00482
+
+---
+
+# 36. FINANCIAL ACTIVITY TIMELINE
+
+Where useful, show an activity timeline:
+
+Booking created
+Payment received
+Booking completed
+Cancellation
+Refund requested
+Refund completed
+
+Example:
+
+10:02 Booking created
+10:03 Payment received
+10:04 Booking confirmed
+13:40 Cancelled by customer
+13:41 Refund requested
+
+This gives salon owners and support staff a clear transaction history.
+
+---
+
+# 37. MOBILE FINANCIAL EXPERIENCE
+
+Mobile should prioritize:
+
+Today's revenue
+Outstanding payments
+Recent payments
+Refunds
+
+Use stacked cards and simple lists.
+
+Do not force desktop financial tables into phone width.
+
+---
+
+# 38. DESKTOP FINANCIAL EXPERIENCE
+
+Desktop can use:
+
+Tables
+Summary cards
+Filters
+Reports
+Side panels
+
+Maintain visual consistency with the existing salon operations UI.
+
+---
+
+# 39. EMPTY STATES
+
+Create useful empty states:
+
+No payments yet
+No refunds yet
+No outstanding payments
+No expenses yet
+No financial activity
+
+Example:
+
+"No payments yet."
+
+"Payments will appear here when customers pay for appointments."
+
+---
+
+# 40. ERROR STATES
+
+Create:
+
+Payment load failure
+Payment save failure
+Refund load failure
+Refund failure
+Expense save failure
+Report generation failure
+Export failure
+Provider connection failure
+
+Use actionable language.
+
+Examples:
+
+"Unable to save payment."
+
+[Try again]
+
+"Unable to generate report."
+
+[Try again]
+
+---
+
+# 41. PERMISSIONS
+
+Salon Owner:
+
+Full financial visibility.
+
+Salon Manager:
+
+Financial access according to permission configuration.
+
+Do not expose platform-level payment/revenue data to salon users.
+
+---
+
+# 42. FINANCIAL DATA SEPARATION
+
+Do not mix:
+
+Salon financial transactions
+
+with:
+
+BookYourBarber platform subscription transactions.
+
+Salon payments are customer-to-salon activity.
+
+Subscription billing is salon-to-BookYourBarber activity.
+
+These must remain separate domains.
+
+---
+
+# 43. CANCELLATION FEE SEPARATION
+
+Customer cancellation fees belong to:
+
+BookYourBarber platform revenue
+
+not salon revenue.
+
+Display this distinction clearly in platform-level reporting.
+
+Do not count the platform's cancellation fee as the salon's service revenue.
+
+---
+
+# 44. HISTORICAL DATA
+
+Changing today's service price must not rewrite historical appointment amounts.
+
+Example:
+
+Old haircut:
+R150
+
+New haircut:
+R180
+
+Past appointment remains:
+
+R150
+
+Future bookings use:
+
+R180
+
+---
+
+# 45. FINANCIAL STATE DESIGN
+
+Ensure these states are visually represented:
+
+Payment pending
+Payment successful
+Payment failed
+Partially paid
+Fully paid
+Refund requested
+Refund processing
+Refund completed
+Refund failed
+Outstanding
+
+---
+
+# 46. FINAL OUTPUT
+
+Create high-fidelity responsive designs for:
+
+1. Payments dashboard
+2. Payment list
+3. Payment detail
+4. Record payment
+5. Partial payment
+6. Outstanding payments
+7. Refund list
+8. Refund detail
+9. Refund processing
+10. Refund completed
+11. Refund failed
+12. Revenue dashboard
+13. Revenue detail
+14. Revenue by staff
+15. Revenue by booking source
+16. Revenue by payment method
+17. Expenses
+18. Add expense
+19. Edit expense
+20. Delete expense confirmation
+21. Financial reports
+22. Report filters
+23. Export flow
+24. Payment provider status
+25. Payment provider connection
+26. Financial activity timeline
+27. Mobile financial layouts
+28. Desktop financial layouts
+29. Empty states
+30. Error states
+31. Permission states
+
+---
+
+# FINAL UX PRINCIPLE
+
+Financial information must be understandable without accounting knowledge.
+
+A salon owner should quickly answer:
+
+How much did I charge?
+How much did I collect?
+Who still owes me?
+How much was refunded?
+How much did I spend?
+What was my operating result?
+
+The product must remain simple, trustworthy and operational.
+
+Do not turn BookYourBarber into accounting software.
