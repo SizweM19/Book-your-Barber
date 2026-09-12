@@ -2262,7 +2262,6 @@ export function CustomerApp({ salonSlug }: { salonSlug?: string } = {}) {
     if (prev) { setHistory(h => h.slice(0,-1)); setStep(prev) }
   }
   function jumpTo(s: Step) { setHistory([]); setStep(s) }
-  function restart()        { setHistory([]); setBooking({}); setStep("salon") }
   function restart()        { setHistory([]); setBooking({}); setIsRescheduling(false); setStep("salon") }
 
   async function handlePaymentSuccess() {

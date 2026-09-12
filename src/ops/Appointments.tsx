@@ -468,10 +468,6 @@ export function AppointmentDetailScreen({ apptRef, onBack, onNav }: {
 
 // ─── RECORD PAYMENT ───────────────────────────────────────────────────────────
 
-export function RecordPaymentScreen({ onBack, onDone }: { onBack: () => void; onDone: () => void }) {
-  const appt = OPS_APPOINTMENTS[3] // demo: Busisiwe, partial paid
-  const outstanding = appt.charged - appt.paid
-  const [amount, setAmount] = useState(String(outstanding))
 export function RecordPaymentScreen({
   apptRef,
   onBack,
@@ -485,7 +481,6 @@ export function RecordPaymentScreen({
   const [loading, setLoading] = useState(Boolean(apptRef))
   const [amount, setAmount] = useState("")
   const [method, setMethod] = useState<PaymentMethod>("cash")
-  const [done,   setDone]   = useState(false)
   const [done, setDone] = useState(false)
   const [isSubmitting, setIsSubmitting] = useState(false)
   const [error, setError] = useState<string | null>(null)
@@ -528,11 +523,6 @@ export function RecordPaymentScreen({
     { key:"yoco",    label:"Yoco"    },
     { key:"payshap", label:"PayShap" },
     { key:"other",   label:"Other"   },
-    { key: "cash",    label: "Cash"    },
-    { key: "card",    label: "Card"    },
-    { key: "yoco",    label: "Yoco"    },
-    { key: "payshap", label: "PayShap" },
-    { key: "other",   label: "Other"   },
   ]
 
   if (loading) {
@@ -726,7 +716,6 @@ export function CompleteApptScreen({
         <svg width="26" height="26" viewBox="0 0 24 24" fill="none" stroke="white" strokeWidth="3" strokeLinecap="round"><path d="M20 6L9 17l-5-5"/></svg>
       </div>
       <h2 className="text-[22px] font-black text-gray-900 mb-2">Appointment completed</h2>
-      <p className="text-[13px] text-gray-500 mb-1">Customer history, visit count and loyalty points updated.</p>
       <p className="text-[13px] text-gray-500 mb-1">Customer history, visit count and appointment status updated.</p>
       <p className="text-[12px] text-gray-400 mb-8">Revenue counted toward today's total.</p>
       <PrimaryBtn label="Back to appointments" onClick={onDone} />
@@ -1069,7 +1058,6 @@ export function RescheduleScreen({ apptRef, onBack, onDone }: { apptRef?: string
       availabilityService.getAvailableSlots({
         tenantId: activeTenantId,
         serviceId: appt.serviceId || "s1",
-        date: dStr,
         date: newDate,
         staffId: appt.staffId
       }).then(slots => {
@@ -1134,7 +1122,6 @@ export function RescheduleScreen({ apptRef, onBack, onDone }: { apptRef?: string
     <div className="p-6 max-w-lg mx-auto flex flex-col items-center min-h-[60vh] justify-center text-center">
       <div className="text-5xl mb-5">⚠️</div>
       <h2 className="text-[20px] font-black text-gray-900 mb-2">That time is no longer available</h2>
-      <p className="text-[13px] text-gray-500 mb-2">Someone else just booked this slot.</p>
       <p className="text-[13px] text-gray-500 mb-2">Someone else just booked this slot or a schedule conflict occurred.</p>
       <p className="text-[13px] text-emerald-700 font-semibold mb-8">The original appointment remains unchanged.</p>
       <div className="flex gap-3 w-full">
@@ -1250,9 +1237,6 @@ export function CreateApptScreen({ onBack, onDone, onNav }: {
 }) {
   const { tenantId } = useTenantContext()
   const [stage,         setStage]         = useState<CreateStage>("customer")
-  const [cust,          setCust]          = useState<(typeof OPS_CUSTOMERS)[number] | null>(null)
-  const [svc,           setSvc]           = useState<(typeof OPS_SERVICES)[number] | null>(null)
-  const [staffChoice,   setStaffChoice]   = useState<(typeof OPS_STAFF)[number] | null | "any">(null)
   const [cust,          setCust]          = useState<{ id: string; name: string; phone: string; email?: string; visits?: number } | null>(null)
   const [svc,           setSvc]           = useState<{ id: string; name: string; duration: number; price: number; category: string; active?: boolean } | null>(null)
   const [staffChoice,   setStaffChoice]   = useState<{ id: string; name: string; role?: string; photo?: string; active?: boolean } | null | "any">(null)
@@ -1263,21 +1247,12 @@ export function CreateApptScreen({ onBack, onDone, onNav }: {
   const [newName,       setNewName]       = useState("")
   const [newPhone,      setNewPhone]      = useState("")
   const [dupWarning,    setDupWarning]    = useState(false)
-  const [dupCust,       setDupCust]       = useState<(typeof OPS_CUSTOMERS)[number] | null>(null)
   const [dupCust,       setDupCust]       = useState<{ id: string; name: string; phone: string; email?: string; visits?: number } | null>(null)
   const [isSubmitting,  setIsSubmitting]  = useState(false)
   const [createError,   setCreateError]   = useState<string | null>(null)
 
-  const filteredCusts = OPS_CUSTOMERS.filter(c =>
-    c.name.toLowerCase().includes(search.toLowerCase()) ||
-    c.phone.includes(search) ||
-    c.email.toLowerCase().includes(search.toLowerCase())
-  )
 
-  const SIMPLE_DATES = ["Sep 9","Sep 10","Sep 11","Sep 12","Sep 15","Sep 16"]
 
-  const [servicesList, setServicesList] = useState(OPS_SERVICES)
-  const [staffList,    setStaffList]    = useState(OPS_STAFF)
   const [customersList, setCustomersList] = useState<{ id: string; name: string; phone: string; email?: string; visits: number }[]>([])
   const [servicesList,  setServicesList]  = useState<{ id: string; name: string; duration: number; price: number; category: string; active?: boolean }[]>([])
   const [staffList,     setStaffList]     = useState<{ id: string; name: string; role?: string; photo?: string; active?: boolean }[]>([])
@@ -1352,7 +1327,6 @@ export function CreateApptScreen({ onBack, onDone, onNav }: {
         tenantId,
         serviceId: svc.id,
         date: dStr,
-        date,
         staffId: targetStaffId
       }).then(slots => {
         if (!mounted) return
@@ -1382,11 +1356,6 @@ export function CreateApptScreen({ onBack, onDone, onNav }: {
   }, [date, svc?.id, staffChoice, tenantId])
 
   function handleNewCust() {
-    // Duplicate detection
-    const dup = OPS_CUSTOMERS.find(c =>
-      c.phone.replace(/\s/g,"") === newPhone.replace(/\s/g,"")
-    )
-    if (dup) { setDupWarning(true); setDupCust(dup); return }
     const cleanPhone = newPhone.replace(/\s/g, "")
     const dup = customersList.find(c => c.phone.replace(/\s/g, "") === cleanPhone)
     if (dup) {
@@ -1427,7 +1396,6 @@ export function CreateApptScreen({ onBack, onDone, onNav }: {
       <Card className="w-full text-left px-5 mb-6">
         <OpsDetailRow label="Customer" value={cust?.name ?? newName} />
         <OpsDetailRow label="Service"  value={svc?.name ?? "—"} />
-        <OpsDetailRow label="Staff"    value={staffChoice === "any" ? "Any available" : (staffChoice as typeof OPS_STAFF[number])?.name ?? "—"} />
         <OpsDetailRow label="Staff"    value={staffChoice === "any" ? "Any available" : (staffChoice as any)?.name ?? "—"} />
         <OpsDetailRow label="Date"     value={date} />
         <OpsDetailRow label="Time"     value={time} />
@@ -1622,7 +1590,6 @@ export function CreateApptScreen({ onBack, onDone, onNav }: {
                     tenantId: tenantId || "",
                     serviceId: svc.id,
                     staffId: targetStaffId,
-                    date: dStr,
                     date: date,
                     time: time || "09:00",
                     customer: {

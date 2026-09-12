@@ -1,19 +1,13 @@
-import React, { useState } from "react"
 import React, { useState, useEffect } from "react"
 import type { OpsView } from "./types"
-import { OPS_STAFF, OPS_APPOINTMENTS } from "./data"
-import { fmtR, Card, SectionTitle, OpsDetailRow, PrimaryBtn, SecondaryBtn, BackBtn, EmptyState } from "./shared"
-import { fmtR, Card, SectionTitle, OpsDetailRow, PrimaryBtn, SecondaryBtn, DangerBtn, BackBtn, EmptyState } from "./shared"
 import { repositories } from "@/infrastructure/repositories/container"
 import { useTenantContext } from "@/application/tenant"
 import type { StaffEntity, ServiceEntity } from "@/application/repositories/interfaces"
-import { fmtR, Card, SectionTitle, OpsDetailRow, PrimaryBtn, SecondaryBtn, DangerBtn, BackBtn, EmptyState } from "./shared"
+import { fmtR, Card, SectionTitle, OpsDetailRow, PrimaryBtn, SecondaryBtn, BackBtn, EmptyState } from "./shared"
 
 // ─── STAFF LIST ───────────────────────────────────────────────────────────────
 
 export function StaffListScreen({ onNav, onStaff }: { onNav: (v: OpsView) => void; onStaff: (id: string) => void }) {
-  const active   = OPS_STAFF.filter(s =>  s.active)
-  const inactive = OPS_STAFF.filter(s => !s.active)
   const { tenantId } = useTenantContext()
   const [staffList, setStaffList] = useState<any[]>([])
   const [loading, setLoading] = useState(true)
@@ -88,23 +82,9 @@ export function StaffListScreen({ onNav, onStaff }: { onNav: (v: OpsView) => voi
     <div className="p-6 max-w-4xl mx-auto space-y-5">
       <div className="flex items-center justify-between flex-wrap gap-3">
         <SectionTitle>Staff</SectionTitle>
-        <PrimaryBtn label="Add staff" onClick={() => {}} icon="+" />
         <PrimaryBtn label="Add staff" onClick={() => setShowAddModal(true)} icon="+" />
       </div>
 
-      <Card>
-        <div className="px-5 py-3 border-b border-gray-100">
-          <p className="text-[11px] font-bold uppercase tracking-widest text-gray-400">Active ({active.length})</p>
-        </div>
-        <div className="divide-y divide-gray-50">
-          {active.map(s => (
-            <button key={s.id} onClick={() => onStaff(s.id)}
-              className="w-full flex items-center gap-4 px-5 py-4 hover:bg-gray-50 transition-colors text-left">
-              <img src={`https://images.unsplash.com/${s.photo}?w=80&h=80&fit=crop&crop=face&auto=format`} alt={s.name}
-                className="w-10 h-10 rounded-full object-cover bg-gray-100 flex-shrink-0" />
-              <div className="flex-1 min-w-0">
-                <p className="font-semibold text-[15px] text-gray-900">{s.name}</p>
-                <p className="text-[12px] text-gray-500">{s.role}</p>
       {/* Add Staff Modal */}
       {showAddModal && (
         <div className="fixed inset-0 bg-black/40 backdrop-blur-sm z-50 flex items-center justify-center p-4">
@@ -117,9 +97,6 @@ export function StaffListScreen({ onNav, onStaff }: { onNav: (v: OpsView) => voi
               <div className="p-3 bg-red-50 border border-red-100 rounded-xl text-[13px] text-red-700">
                 {createError}
               </div>
-              <div className="text-right flex-shrink-0 mr-2">
-                <p className="text-[14px] font-bold text-gray-900">{fmtR(s.todayRevenue)}</p>
-                <p className="text-[11px] text-gray-400">today</p>
             )}
             <div className="space-y-3">
               <div>
@@ -132,9 +109,6 @@ export function StaffListScreen({ onNav, onStaff }: { onNav: (v: OpsView) => voi
                   className="w-full px-4 py-2.5 border-2 border-gray-200 rounded-xl text-[14px] focus:border-gray-900 outline-none"
                 />
               </div>
-              <div className="flex items-center gap-2 flex-shrink-0">
-                <span className="px-2 py-0.5 bg-emerald-50 text-emerald-700 text-[11px] font-bold rounded-md">Active</span>
-                <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="#9CA3AF" strokeWidth="2.5" strokeLinecap="round"><path d="M9 18l6-6-6-6"/></svg>
               <div>
                 <label className="block text-[11px] font-bold uppercase tracking-widest text-gray-400 mb-1">Role</label>
                 <select
@@ -149,8 +123,6 @@ export function StaffListScreen({ onNav, onStaff }: { onNav: (v: OpsView) => voi
                   <option value="Senior Stylist">Senior Stylist</option>
                 </select>
               </div>
-            </button>
-          ))}
               <div>
                 <label className="block text-[11px] font-bold uppercase tracking-widest text-gray-400 mb-1">Phone (optional)</label>
                 <input
@@ -184,32 +156,12 @@ export function StaffListScreen({ onNav, onStaff }: { onNav: (v: OpsView) => voi
             </div>
           </div>
         </div>
-      </Card>
       )}
 
-      {inactive.length > 0 && (
       {loading ? (
         <div className="p-8 text-center text-gray-500">Loading staff...</div>
       ) : staffList.length === 0 ? (
         <Card>
-          <div className="px-5 py-3 border-b border-gray-100">
-            <p className="text-[11px] font-bold uppercase tracking-widest text-gray-400">Inactive ({inactive.length})</p>
-          </div>
-          <div className="divide-y divide-gray-50">
-            {inactive.map(s => (
-              <button key={s.id} onClick={() => onStaff(s.id)}
-                className="w-full flex items-center gap-4 px-5 py-4 hover:bg-gray-50 transition-colors text-left opacity-60">
-                <img src={`https://images.unsplash.com/${s.photo}?w=80&h=80&fit=crop&crop=face&auto=format`} alt={s.name}
-                  className="w-10 h-10 rounded-full object-cover bg-gray-100 flex-shrink-0 grayscale" />
-                <div className="flex-1 min-w-0">
-                  <p className="font-semibold text-[15px] text-gray-900">{s.name}</p>
-                  <p className="text-[12px] text-gray-500">{s.role}</p>
-                </div>
-                <span className="px-2 py-0.5 bg-gray-100 text-gray-500 text-[11px] font-bold rounded-md mr-2">Inactive</span>
-                <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="#9CA3AF" strokeWidth="2.5" strokeLinecap="round"><path d="M9 18l6-6-6-6"/></svg>
-              </button>
-            ))}
-          </div>
           <EmptyState icon="👥" title="No staff members" body="Add your team to begin scheduling and accepting bookings." cta="Add staff" onCta={() => setShowAddModal(true)} />
         </Card>
       ) : (
@@ -222,8 +174,6 @@ export function StaffListScreen({ onNav, onStaff }: { onNav: (v: OpsView) => voi
               {active.map(s => (
                 <button key={s.id} onClick={() => onStaff(s.id)}
                   className="w-full flex items-center gap-4 px-5 py-4 hover:bg-gray-50 transition-colors text-left">
-                  {s.avatarUrl ? (
-                    <img src={s.avatarUrl} alt={s.name} className="w-10 h-10 rounded-full object-cover bg-gray-100 flex-shrink-0" />
                   {(s as any).avatarUrl ? (
                     <img src={(s as any).avatarUrl} alt={s.name} className="w-10 h-10 rounded-full object-cover bg-gray-100 flex-shrink-0" />
                   ) : (
@@ -257,8 +207,6 @@ export function StaffListScreen({ onNav, onStaff }: { onNav: (v: OpsView) => voi
                 {inactive.map(s => (
                   <button key={s.id} onClick={() => onStaff(s.id)}
                     className="w-full flex items-center gap-4 px-5 py-4 hover:bg-gray-50 transition-colors text-left opacity-60">
-                    {s.avatarUrl ? (
-                      <img src={s.avatarUrl} alt={s.name} className="w-10 h-10 rounded-full object-cover bg-gray-100 flex-shrink-0 grayscale" />
                     {(s as any).avatarUrl ? (
                       <img src={(s as any).avatarUrl} alt={s.name} className="w-10 h-10 rounded-full object-cover bg-gray-100 flex-shrink-0 grayscale" />
                     ) : (
@@ -289,22 +237,10 @@ type StaffTab = "overview" | "schedule" | "breaks" | "exceptions" | "services" |
 
 const DAYS = ["Monday","Tuesday","Wednesday","Thursday","Friday","Saturday","Sunday"] as const
 const DAY_INDEX_MAP: Record<string, number> = {
-  Sunday: 0,
-  Monday: 1,
-  Tuesday: 2,
-  Wednesday: 3,
-  Thursday: 4,
-  Friday: 5,
-  Saturday: 6,
+  Sunday: 0, Monday: 1, Tuesday: 2, Wednesday: 3, Thursday: 4, Friday: 5, Saturday: 6,
 }
 const INDEX_DAY_MAP: Record<number, string> = {
-  0: "Sunday",
-  1: "Monday",
-  2: "Tuesday",
-  3: "Wednesday",
-  4: "Thursday",
-  5: "Friday",
-  6: "Saturday",
+  0: "Sunday", 1: "Monday", 2: "Tuesday", 3: "Wednesday", 4: "Thursday", 5: "Friday", 6: "Saturday",
 }
 
 const DEFAULT_HOURS: Record<string, { enabled: boolean; start: string; end: string }> = {
@@ -388,10 +324,9 @@ export function StaffProfileScreen({ staffId, onBack, onNav }: {
       setEditPhone("")
       setEditEmail("")
 
-      // Load appointments for metrics
       const tenantId = dbStaff.tenantId
       const todayStr = new Date().toISOString().slice(0, 10)
-      const currentMonthStr = todayStr.slice(0, 7) // "YYYY-MM"
+      const currentMonthStr = todayStr.slice(0, 7)
 
       const allTenantAppts = await repositories.appointments.listByTenant(tenantId, 500)
       const staffAppts = allTenantAppts.filter(a => a.staffId === dbStaff.id)
@@ -421,7 +356,6 @@ export function StaffProfileScreen({ staffId, onBack, onNav }: {
         cancelled: cancelled.length,
       })
 
-      // Load weekly schedule
       try {
         const weekly = await repositories.schedules.getWeeklySchedule(tenantId, dbStaff.id)
         if (weekly && weekly.length > 0) {
@@ -440,7 +374,6 @@ export function StaffProfileScreen({ staffId, onBack, onNav }: {
         }
       } catch {}
 
-      // Load breaks
       try {
         const dbBreaks = await repositories.schedules.getBreaks(tenantId, dbStaff.id)
         setBreaks(dbBreaks.map(b => ({
@@ -452,7 +385,6 @@ export function StaffProfileScreen({ staffId, onBack, onNav }: {
         })))
       } catch {}
 
-      // Load exceptions
       try {
         const dbExc = await repositories.schedules.getExceptions(tenantId, dbStaff.id)
         setExceptions(dbExc.map(e => ({
@@ -465,7 +397,6 @@ export function StaffProfileScreen({ staffId, onBack, onNav }: {
         })))
       } catch {}
 
-      // Load services & assignments
       try {
         const svcs = await repositories.services.list(tenantId, true)
         setAllServices(svcs)
@@ -683,12 +614,8 @@ export function StaffProfileScreen({ staffId, onBack, onNav }: {
 
       {/* Header */}
       <div className="flex items-start gap-5 mb-6 flex-wrap">
-        <img src={`https://images.unsplash.com/${staff.photo}?w=128&h=128&fit=crop&crop=face&auto=format`} alt={staff.name}
-          className="w-16 h-16 rounded-2xl object-cover bg-gray-100 flex-shrink-0" />
-        {staff.photoUrl ? (
-          <img src={staff.photoUrl} alt={staff.name} className="w-16 h-16 rounded-2xl object-cover bg-gray-100 flex-shrink-0" />
-        {(staff as any).photoUrl ? (
-          <img src={(staff as any).photoUrl} alt={staff.name} className="w-16 h-16 rounded-2xl object-cover bg-gray-100 flex-shrink-0" />
+        {(staff as any).avatarUrl ? (
+          <img src={(staff as any).avatarUrl} alt={staff.name} className="w-16 h-16 rounded-2xl object-cover bg-gray-100 flex-shrink-0" />
         ) : (
           <div className="w-16 h-16 rounded-2xl bg-gray-100 text-gray-700 font-black text-[24px] flex items-center justify-center flex-shrink-0">
             {staff.name[0]}
@@ -704,11 +631,8 @@ export function StaffProfileScreen({ staffId, onBack, onNav }: {
           <p className="text-[14px] text-gray-500">{staff.role}</p>
         </div>
         <div className="flex gap-2">
-          <SecondaryBtn label="Edit" onClick={() => {}} />
           <SecondaryBtn label="Edit" onClick={() => setShowEditModal(true)} />
           {staff.active
-            ? <button className="px-4 py-2.5 border-2 border-red-100 text-red-600 rounded-xl text-[13px] font-semibold hover:bg-red-50 transition-colors">Deactivate</button>
-            : <button className="px-4 py-2.5 border-2 border-emerald-100 text-emerald-700 rounded-xl text-[13px] font-semibold hover:bg-emerald-50 transition-colors">Reactivate</button>
             ? <button onClick={handleToggleActive} className="px-4 py-2.5 border-2 border-red-100 text-red-600 rounded-xl text-[13px] font-semibold hover:bg-red-50 transition-colors">Deactivate</button>
             : <button onClick={handleToggleActive} className="px-4 py-2.5 border-2 border-emerald-100 text-emerald-700 rounded-xl text-[13px] font-semibold hover:bg-emerald-50 transition-colors">Reactivate</button>
           }
@@ -732,9 +656,6 @@ export function StaffProfileScreen({ staffId, onBack, onNav }: {
             <div className="py-3 border-b border-gray-100">
               <p className="text-[11px] font-bold uppercase tracking-widest text-gray-400">Revenue</p>
             </div>
-            <OpsDetailRow label="Today"  value={fmtR(staff.todayRevenue)}  />
-            <OpsDetailRow label="Month"  value={fmtR(staff.monthRevenue)}  />
-            <OpsDetailRow label="Appointments this month" value={String(staff.monthAppointments)} />
             <OpsDetailRow label="Today"  value={fmtR(metrics.todayRevenue)}  />
             <OpsDetailRow label="Month"  value={fmtR(metrics.monthRevenue)}  />
             <OpsDetailRow label="Appointments this month" value={String(metrics.monthAppointments)} />
@@ -743,9 +664,6 @@ export function StaffProfileScreen({ staffId, onBack, onNav }: {
             <div className="py-3 border-b border-gray-100">
               <p className="text-[11px] font-bold uppercase tracking-widest text-gray-400">Performance</p>
             </div>
-            <OpsDetailRow label="Completion rate" value={`${staff.completionRate}%`} />
-            <OpsDetailRow label="No-shows"        value={String(staff.noShowCount)}  />
-            <OpsDetailRow label="Customers served" value={String(uniqueCusts)}       />
             <OpsDetailRow label="Completion rate" value={`${metrics.completionRate}%`} />
             <OpsDetailRow label="No-shows"        value={String(metrics.noShowCount)}  />
             <OpsDetailRow label="Customers served" value={String(metrics.uniqueCusts)} />
@@ -756,7 +674,6 @@ export function StaffProfileScreen({ staffId, onBack, onNav }: {
       {/* Schedule */}
       {tab === "schedule" && (
         <Card>
-          <div className="px-5 py-3 border-b border-gray-100">
           <div className="px-5 py-3 border-b border-gray-100 flex items-center justify-between">
             <p className="text-[11px] font-bold uppercase tracking-widest text-gray-400">Weekly schedule</p>
             {scheduleSavedToast && (
@@ -793,10 +710,10 @@ export function StaffProfileScreen({ staffId, onBack, onNav }: {
             })}
           </div>
           <div className="px-5 py-4 border-t border-gray-100 flex justify-end">
-            <PrimaryBtn label="Save schedule" onClick={() => {}} />
             <PrimaryBtn
               label={savingSchedule ? "Saving..." : "Save schedule"}
               onClick={handleSaveSchedule}
+              disabled={savingSchedule}
             />
           </div>
         </Card>
@@ -804,152 +721,132 @@ export function StaffProfileScreen({ staffId, onBack, onNav }: {
 
       {/* Breaks */}
       {tab === "breaks" && (
-        <div className="space-y-3">
+        <div className="space-y-4">
           {showAddBreak && (
-            <Card className="p-4 space-y-3 border-2 border-gray-900">
-              <p className="font-bold text-[14px] text-gray-900">Add regular break</p>
-              <div className="grid grid-cols-2 gap-2">
+            <Card className="p-5 border-2 border-gray-900">
+              <div className="flex items-center justify-between mb-4">
+                <h4 className="font-bold text-[14px] text-gray-900">Add recurring break</h4>
+                <button onClick={() => setShowAddBreak(false)} className="text-gray-400 hover:text-gray-600">✕</button>
+              </div>
+              <div className="grid sm:grid-cols-2 gap-4 mb-4">
                 <div>
-                  <label className="block text-[11px] font-bold text-gray-500 mb-1">Day</label>
-                  <select value={breakDay} onChange={e => setBreakDay(e.target.value)} className="w-full border p-2 rounded-lg text-[13px]">
+                  <label className="block text-[11px] font-bold uppercase tracking-widest text-gray-400 mb-1">Day</label>
+                  <select value={breakDay} onChange={e => setBreakDay(e.target.value)}
+                    className="w-full px-3 py-2 border-2 border-gray-200 rounded-xl text-[13px] focus:border-gray-900 outline-none bg-white">
                     {DAYS.map(d => <option key={d}>{d}</option>)}
                   </select>
                 </div>
                 <div>
-                  <label className="block text-[11px] font-bold text-gray-500 mb-1">Label</label>
-                  <input type="text" value={breakLabel} onChange={e => setBreakLabel(e.target.value)} className="w-full border p-2 rounded-lg text-[13px]" />
+                  <label className="block text-[11px] font-bold uppercase tracking-widest text-gray-400 mb-1">Label</label>
+                  <input type="text" value={breakLabel} onChange={e => setBreakLabel(e.target.value)} placeholder="e.g. Lunch"
+                    className="w-full px-3 py-2 border-2 border-gray-200 rounded-xl text-[13px] focus:border-gray-900 outline-none" />
                 </div>
-                <div>
-                  <label className="block text-[11px] font-bold text-gray-500 mb-1">Start time</label>
-                  <input type="time" value={breakStart} onChange={e => setBreakStart(e.target.value)} className="w-full border p-2 rounded-lg text-[13px]" />
-                </div>
-                <div>
-                  <label className="block text-[11px] font-bold text-gray-500 mb-1">End time</label>
-                  <input type="time" value={breakEnd} onChange={e => setBreakEnd(e.target.value)} className="w-full border p-2 rounded-lg text-[13px]" />
+                <div className="sm:col-span-2 flex items-center gap-2">
+                  <input type="time" value={breakStart} onChange={e => setBreakStart(e.target.value)}
+                    className="flex-1 px-3 py-2 border-2 border-gray-200 rounded-xl text-[13px] font-mono focus:border-gray-900 outline-none" />
+                  <span className="text-gray-400 font-medium">to</span>
+                  <input type="time" value={breakEnd} onChange={e => setBreakEnd(e.target.value)}
+                    className="flex-1 px-3 py-2 border-2 border-gray-200 rounded-xl text-[13px] font-mono focus:border-gray-900 outline-none" />
                 </div>
               </div>
-              <div className="flex gap-2 justify-end pt-2">
-                <SecondaryBtn label="Cancel" onClick={() => setShowAddBreak(false)} />
-                <PrimaryBtn label="Add break" onClick={handleAddBreak} />
-              </div>
+              <PrimaryBtn label="Add break" onClick={handleAddBreak} />
             </Card>
           )}
 
           <Card>
+            <div className="px-5 py-3 border-b border-gray-100 flex items-center justify-between">
+              <p className="text-[11px] font-bold uppercase tracking-widest text-gray-400">Recurring breaks</p>
+              {!showAddBreak && <button onClick={() => setShowAddBreak(true)} className="text-[12px] font-bold text-gray-900">+ Add</button>}
+            </div>
             {breaks.length === 0 ? (
-              <EmptyState icon="☕" title="No breaks set" body="Add regular breaks for this staff member." />
+              <div className="p-8 text-center text-gray-500 text-[13px]">No recurring breaks configured.</div>
             ) : (
               <div className="divide-y divide-gray-50">
                 {breaks.map(b => (
-                  <div key={b.id} className="flex items-center justify-between px-5 py-3.5">
+                  <div key={b.id} className="flex items-center justify-between px-5 py-4">
                     <div>
-                      <p className="font-semibold text-[13px] text-gray-900">{b.label}</p>
-                      <p className="text-[12px] text-gray-500">{b.day} · {b.start} – {b.end}</p>
+                      <p className="font-semibold text-[14px] text-gray-900">{b.label}</p>
+                      <p className="text-[12px] text-gray-500 mt-0.5">{b.day}s, {b.start} – {b.end}</p>
                     </div>
-                    <button onClick={() => setBreaks(bk => bk.filter(x => x.id !== b.id))}
-                    <button onClick={() => handleRemoveBreak(b.id)}
-                      className="text-[12px] text-red-500 font-semibold hover:text-red-700">Remove</button>
+                    <button onClick={() => handleRemoveBreak(b.id)} className="text-[12px] font-bold text-red-500 hover:text-red-700">Remove</button>
                   </div>
                 ))}
               </div>
             )}
           </Card>
-          <button onClick={() => setBreaks(bk => [...bk, { id:String(Date.now()), day:"Friday", start:"12:00", end:"12:30", label:"Lunch" }])}
-            className="w-full py-3 border-2 border-dashed border-gray-300 rounded-xl text-[13px] font-semibold text-gray-600 hover:border-gray-900 hover:text-gray-900 transition-colors">
-            + Add break
-          </button>
-          {!showAddBreak && (
-            <button onClick={() => setShowAddBreak(true)}
-              className="w-full py-3 border-2 border-dashed border-gray-300 rounded-xl text-[13px] font-semibold text-gray-600 hover:border-gray-900 hover:text-gray-900 transition-colors">
-              + Add break
-            </button>
-          )}
         </div>
       )}
 
       {/* Exceptions */}
       {tab === "exceptions" && (
-        <div className="space-y-3">
+        <div className="space-y-4">
           {showAddException && (
-            <Card className="p-4 space-y-3 border-2 border-gray-900">
-              <p className="font-bold text-[14px] text-gray-900">Add schedule exception</p>
-              <div className="grid grid-cols-2 gap-2">
-                <div>
-                  <label className="block text-[11px] font-bold text-gray-500 mb-1">Date</label>
-                  <input type="date" value={excDate} onChange={e => setExcDate(e.target.value)} className="w-full border p-2 rounded-lg text-[13px]" />
+            <Card className="p-5 border-2 border-gray-900">
+              <div className="flex items-center justify-between mb-4">
+                <h4 className="font-bold text-[14px] text-gray-900">Add schedule exception</h4>
+                <button onClick={() => setShowAddException(false)} className="text-gray-400 hover:text-gray-600">✕</button>
+              </div>
+              <div className="grid sm:grid-cols-2 gap-4 mb-4">
+                <div className="sm:col-span-2">
+                  <label className="block text-[11px] font-bold uppercase tracking-widest text-gray-400 mb-1">Date</label>
+                  <input type="date" value={excDate} onChange={e => setExcDate(e.target.value)}
+                    className="w-full px-3 py-2 border-2 border-gray-200 rounded-xl text-[13px] focus:border-gray-900 outline-none" />
                 </div>
                 <div>
-                  <label className="block text-[11px] font-bold text-gray-500 mb-1">Type</label>
-                  <select value={excType} onChange={e => setExcType(e.target.value as any)} className="w-full border p-2 rounded-lg text-[13px]">
+                  <label className="block text-[11px] font-bold uppercase tracking-widest text-gray-400 mb-1">Type</label>
+                  <select value={excType} onChange={e => setExcType(e.target.value as any)}
+                    className="w-full px-3 py-2 border-2 border-gray-200 rounded-xl text-[13px] focus:border-gray-900 outline-none bg-white">
                     <option value="dayOff">Day off</option>
                     <option value="customHours">Custom hours</option>
                   </select>
                 </div>
                 <div>
-                  <label className="block text-[11px] font-bold text-gray-500 mb-1">Reason / Label</label>
-                  <input type="text" value={excReason} onChange={e => setExcReason(e.target.value)} className="w-full border p-2 rounded-lg text-[13px]" />
+                  <label className="block text-[11px] font-bold uppercase tracking-widest text-gray-400 mb-1">Reason / Label</label>
+                  <input type="text" value={excReason} onChange={e => setExcReason(e.target.value)} placeholder="e.g. Public holiday"
+                    className="w-full px-3 py-2 border-2 border-gray-200 rounded-xl text-[13px] focus:border-gray-900 outline-none" />
                 </div>
                 {excType === "customHours" && (
-                  <div className="flex gap-2 items-center">
-                    <div>
-                      <label className="block text-[11px] font-bold text-gray-500 mb-1">Start</label>
-                      <input type="time" value={excStart} onChange={e => setExcStart(e.target.value)} className="w-full border p-2 rounded-lg text-[13px]" />
-                    </div>
-                    <div>
-                      <label className="block text-[11px] font-bold text-gray-500 mb-1">End</label>
-                      <input type="time" value={excEnd} onChange={e => setExcEnd(e.target.value)} className="w-full border p-2 rounded-lg text-[13px]" />
-                    </div>
+                  <div className="sm:col-span-2 flex items-center gap-2 mt-2">
+                    <input type="time" value={excStart} onChange={e => setExcStart(e.target.value)}
+                      className="flex-1 px-3 py-2 border-2 border-gray-200 rounded-xl text-[13px] font-mono focus:border-gray-900 outline-none" />
+                    <span className="text-gray-400 font-medium">to</span>
+                    <input type="time" value={excEnd} onChange={e => setExcEnd(e.target.value)}
+                      className="flex-1 px-3 py-2 border-2 border-gray-200 rounded-xl text-[13px] font-mono focus:border-gray-900 outline-none" />
                   </div>
                 )}
               </div>
-              <div className="flex gap-2 justify-end pt-2">
-                <SecondaryBtn label="Cancel" onClick={() => setShowAddException(false)} />
-                <PrimaryBtn label="Add exception" onClick={handleAddException} />
-              </div>
+              <PrimaryBtn label="Add exception" onClick={handleAddException} />
             </Card>
           )}
 
           <Card>
+            <div className="px-5 py-3 border-b border-gray-100 flex items-center justify-between">
+              <p className="text-[11px] font-bold uppercase tracking-widest text-gray-400">Specific dates (Time off / Extra shifts)</p>
+              {!showAddException && <button onClick={() => setShowAddException(true)} className="text-[12px] font-bold text-gray-900">+ Add</button>}
+            </div>
             {exceptions.length === 0 ? (
-              <EmptyState icon="📅" title="No exceptions" body="Add one-off days off or custom hours." />
+              <div className="p-8 text-center text-gray-500 text-[13px]">No upcoming exceptions.</div>
             ) : (
               <div className="divide-y divide-gray-50">
                 {exceptions.map(e => (
-                  <div key={e.id} className="flex items-center justify-between px-5 py-3.5">
+                  <div key={e.id} className="flex items-center justify-between px-5 py-4">
                     <div>
-                      <p className="font-semibold text-[13px] text-gray-900">{e.label}</p>
+                      <div className="flex items-center gap-2 mb-0.5">
+                        <span className={`px-2 py-0.5 rounded-md text-[10px] font-bold ${e.type === "dayOff" ? "bg-red-50 text-red-600" : "bg-blue-50 text-blue-700"}`}>
+                          {e.type === "dayOff" ? "Day off" : "Custom hours"}
+                        </span>
+                        <span className="font-semibold text-[13px] text-gray-900">{e.date}</span>
+                      </div>
                       <p className="text-[12px] text-gray-500">
-                        {e.date}
-                        {e.type === "customHours" && e.start && ` · ${e.start} – ${(e as typeof e & { end?: string }).end}`}
-                        {e.type === "customHours" && e.start && ` · ${e.start} – ${e.end}`}
+                        {e.label} {e.type === "customHours" && `(${e.start} – ${e.end})`}
                       </p>
-                      <span className={`text-[11px] font-bold px-2 py-0.5 rounded-md mt-1 inline-block ${e.type === "dayOff" ? "bg-red-50 text-red-600" : "bg-amber-50 text-amber-700"}`}>
-                        {e.type === "dayOff" ? "Day off" : "Custom hours"}
-                      </span>
                     </div>
-                    <button onClick={() => setExceptions(ex => ex.filter(x => x.id !== e.id))}
-                    <button onClick={() => handleRemoveException(e.id)}
-                      className="text-[12px] text-red-500 font-semibold hover:text-red-700">Remove</button>
+                    <button onClick={() => handleRemoveException(e.id)} className="text-[12px] font-bold text-red-500 hover:text-red-700">Remove</button>
                   </div>
                 ))}
               </div>
             )}
           </Card>
-          <div className="flex gap-2">
-            <button onClick={() => setExceptions(ex => [...ex, { id:String(Date.now()), date:"2026-10-01", type:"dayOff", label:"Day off" }])}
-              className="flex-1 py-3 border-2 border-dashed border-gray-300 rounded-xl text-[13px] font-semibold text-gray-600 hover:border-gray-900 hover:text-gray-900 transition-colors">
-              + Day off
-          {!showAddException && (
-            <button onClick={() => setShowAddException(true)}
-              className="w-full py-3 border-2 border-dashed border-gray-300 rounded-xl text-[13px] font-semibold text-gray-600 hover:border-gray-900 hover:text-gray-900 transition-colors">
-              + Add exception
-            </button>
-            <button onClick={() => setExceptions(ex => [...ex, { id:String(Date.now()), date:"2026-10-02", type:"customHours", label:"Late start", start:"11:00", end:"18:00" }])}
-              className="flex-1 py-3 border-2 border-dashed border-gray-300 rounded-xl text-[13px] font-semibold text-gray-600 hover:border-gray-900 hover:text-gray-900 transition-colors">
-              + Custom hours
-            </button>
-          </div>
-          )}
         </div>
       )}
 
@@ -958,72 +855,35 @@ export function StaffProfileScreen({ staffId, onBack, onNav }: {
         <Card>
           <div className="px-5 py-3 border-b border-gray-100">
             <p className="text-[11px] font-bold uppercase tracking-widest text-gray-400">Assigned services</p>
+            <p className="text-[12px] text-gray-500 mt-0.5">Select the services this staff member can perform.</p>
           </div>
-          {["Haircut & Beard Combo","Fade Haircut","Beard Trim and Shape","Head Shave","Hair Wash & Blow-dry"].map((svc, i) => (
-            <div key={i} className="flex items-center justify-between px-5 py-3.5 border-b border-gray-50 last:border-0">
-              <p className="text-[13px] font-semibold text-gray-900">{svc}</p>
-              <label className="relative inline-flex items-center cursor-pointer">
-                <input type="checkbox" defaultChecked={i < 4} className="sr-only peer" />
-                <div className="w-10 h-5 bg-gray-200 rounded-full peer-checked:bg-gray-900 transition-colors after:content-[''] after:absolute after:top-0.5 after:left-0.5 after:bg-white after:rounded-full after:h-4 after:w-4 after:transition-all peer-checked:after:translate-x-5" />
-              </label>
-            </div>
-          ))}
-          {allServices.length === 0 ? (
-            <EmptyState icon="✂️" title="No services found" body="Create salon services first in the Services tab." />
-          ) : (
-            allServices.map(svc => {
-              const checked = assignedServiceIds.includes(svc.id)
-              return (
-                <div key={svc.id} className="flex items-center justify-between px-5 py-3.5 border-b border-gray-50 last:border-0">
-                  <div>
-                    <p className="text-[13px] font-semibold text-gray-900">{svc.name}</p>
-                    <p className="text-[11px] text-gray-400">{svc.duration} min · {fmtR(svc.price)}</p>
-                  </div>
-                  <label className="relative inline-flex items-center cursor-pointer">
-                    <input
-                      type="checkbox"
-                      checked={checked}
-                      onChange={() => handleToggleService(svc.id)}
-                      className="sr-only peer"
-                    />
-                    <div className="w-10 h-5 bg-gray-200 rounded-full peer-checked:bg-gray-900 transition-colors after:content-[''] after:absolute after:top-0.5 after:left-0.5 after:bg-white after:rounded-full after:h-4 after:w-4 after:transition-all peer-checked:after:translate-x-5" />
+          <div className="divide-y divide-gray-50">
+            {allServices.length === 0 ? (
+              <div className="p-8 text-center text-gray-500 text-[13px]">No services available in the system.</div>
+            ) : (
+              allServices.map(s => {
+                const assigned = assignedServiceIds.includes(s.id)
+                return (
+                  <label key={s.id} className="flex items-center gap-4 px-5 py-4 cursor-pointer hover:bg-gray-50 transition-colors">
+                    <input type="checkbox" checked={assigned} onChange={() => handleToggleService(s.id)}
+                      className="w-4 h-4 text-gray-900 border-gray-300 rounded focus:ring-gray-900" />
+                    <div className="flex-1">
+                      <p className="font-semibold text-[14px] text-gray-900">{s.name}</p>
+                      <p className="text-[12px] text-gray-500">{s.category} · {s.duration} min</p>
+                    </div>
                   </label>
-                </div>
-              )
-            })
-          )}
+                )
+              })
+            )}
+          </div>
         </Card>
       )}
 
-      {/* Performance — objective metrics only, no invented scores */}
       {/* Performance */}
       {tab === "performance" && (
-        <div className="space-y-5">
-          <div className="grid grid-cols-2 md:grid-cols-3 gap-3">
-            {[
-              { label:"Completed",        value:String(completed.length)  },
-              { label:"Revenue (month)",  value:fmtR(staff.monthRevenue)  },
-              { label:"Cancelled",        value:String(cancelled.length)  },
-              { label:"No-shows",         value:String(noShows.length)    },
-              { label:"Customers served", value:String(uniqueCusts)       },
-              { label:"Completion rate",  value:`${staff.completionRate}%`},
-              { label:"Completed",        value:String(metrics.completed)        },
-              { label:"Revenue (month)",  value:fmtR(metrics.monthRevenue)       },
-              { label:"Cancelled",        value:String(metrics.cancelled)        },
-              { label:"No-shows",         value:String(metrics.noShowCount)      },
-              { label:"Customers served", value:String(metrics.uniqueCusts)      },
-              { label:"Completion rate",  value:`${metrics.completionRate}%`     },
-            ].map(m => (
-              <Card key={m.label} className="p-4">
-                <p className="text-[11px] font-bold uppercase tracking-widest text-gray-400 mb-1">{m.label}</p>
-                <p className="text-[20px] font-black text-gray-900">{m.value}</p>
-              </Card>
-            ))}
-          </div>
-          <Card className="px-5 py-4">
-            <p className="text-[12px] text-gray-400 leading-relaxed">Performance data reflects all recorded appointments. Completion rate = completed / (completed + cancelled + no-shows). No composite score is calculated.</p>
-          </Card>
-        </div>
+        <Card>
+          <EmptyState icon="📈" title="Detailed performance" body="Advanced analytics and commission tracking coming soon." />
+        </Card>
       )}
     </div>
   )

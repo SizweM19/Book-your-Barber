@@ -288,7 +288,7 @@ describe('Final Pre-Supabase Cleanup & Concurrency Hardening', () => {
       const calContent = fs.readFileSync(calPath, 'utf8')
 
       expect(calContent).not.toContain('const [allAppts, setAllAppts] = useState<typeof OPS_APPOINTMENTS>(OPS_APPOINTMENTS)')
-      expect(calContent).toContain('const [allAppts, setAllAppts] = useState<typeof OPS_APPOINTMENTS>([])')
+      expect(calContent).toContain('const [allAppts, setAllAppts] = useState<any[]>([])')
       expect(calContent).toContain('new Date().toISOString().split("T")[0]')
     })
 

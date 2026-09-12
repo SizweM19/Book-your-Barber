@@ -83,7 +83,6 @@ export function Card({ children, className = "" }: { children: React.ReactNode; 
 }
 
 export function OpsDetailRow({ label, value, mono, accent }: {
-  label: string; value: string; mono?: boolean; accent?: string
   label: string; value: React.ReactNode; mono?: boolean; accent?: string
 }) {
   return (
