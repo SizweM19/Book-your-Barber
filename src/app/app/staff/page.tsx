@@ -1,15 +1,11 @@
 'use client'
 
-import React, { useState } from 'react'
-import { useRouter } from 'next/navigation'
 import React, { useState, useEffect, Suspense } from 'react'
 import { useRouter, useSearchParams } from 'next/navigation'
 import { StaffListScreen, StaffProfileScreen } from '@/ops/Staff'
 
-export default function StaffPage() {
 function StaffContent() {
   const router = useRouter()
-  const [selectedStaffId, setSelectedStaffId] = useState<string | null>(null)
   const searchParams = useSearchParams()
   const idParam = searchParams.get('id')
   const [selectedStaffId, setSelectedStaffId] = useState<string | null>(idParam)

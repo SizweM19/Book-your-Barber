@@ -1,14 +1,10 @@
-import React, { useState } from "react"
 import React, { useState, useEffect } from "react"
 import type { OpsView } from "./types"
-import { OPS_CUSTOMERS, OPS_APPOINTMENTS } from "./data"
 import { repositories } from "@/infrastructure/repositories/container"
 import { useTenantContext } from "@/application/tenant"
-import type { CustomerEntity } from "@/application/repositories/interfaces"
 import {
-  fmtR, Card, SectionTitle, OpsDetailRow, ApptBadge, PayBadge,
+  fmtR, Card, SectionTitle, ApptBadge, PayBadge,
   SearchBar, PrimaryBtn, SecondaryBtn, BackBtn, EmptyState,
-  SearchBar, PrimaryBtn, SecondaryBtn, DangerBtn, BackBtn, EmptyState,
 } from "./shared"
 
 // ─── SEGMENT CONFIG ───────────────────────────────────────────────────────────
@@ -52,7 +48,6 @@ export function CustomerListScreen({ onNav, onCustomer }: {
   const [search,  setSearch]  = useState("")
   const [segment, setSegment] = useState<SegmentKey>("all")
 
-  const filtered = OPS_CUSTOMERS.filter(c => {
   // Add customer modal state
   const [showAddModal, setShowAddModal] = useState(false)
   const [newName, setNewName] = useState("")
@@ -130,11 +125,9 @@ export function CustomerListScreen({ onNav, onCustomer }: {
     if (segment !== "all" && c.segment !== segment) return false
     if (search) {
       const q = search.toLowerCase()
-      return c.name.toLowerCase().includes(q) || c.phone.includes(q) || c.email.toLowerCase().includes(q)
       return (
         c.name.toLowerCase().includes(q) ||
         c.phone.includes(q) ||
-        (c.email && c.email.toLowerCase().includes(q))
         (c.email ? c.email.toLowerCase().includes(q) : false)
       )
     }
@@ -145,7 +138,6 @@ export function CustomerListScreen({ onNav, onCustomer }: {
     <div className="p-6 max-w-5xl mx-auto space-y-5">
       <div className="flex items-center justify-between flex-wrap gap-3">
         <SectionTitle>Customers</SectionTitle>
-        <PrimaryBtn label="Add customer" onClick={() => onNav("createAppt")} icon="+" />
         <PrimaryBtn label="Add customer" onClick={() => setShowAddModal(true)} icon="+" />
       </div>
 
@@ -156,7 +148,6 @@ export function CustomerListScreen({ onNav, onCustomer }: {
             className={`px-3 py-2 rounded-lg text-[12px] font-semibold transition-colors ${segment === s.key ? "bg-white text-gray-900 shadow-sm" : "text-gray-500 hover:text-gray-700"}`}>
             {s.label}
             {s.key !== "all" && (
-              <span className="ml-1.5 text-[10px] text-gray-400">{OPS_CUSTOMERS.filter(c => c.segment === s.key).length}</span>
               <span className="ml-1.5 text-[10px] text-gray-400">{customers.filter(c => c.segment === s.key).length}</span>
             )}
           </button>
@@ -237,8 +228,6 @@ export function CustomerListScreen({ onNav, onCustomer }: {
       )}
 
       <Card>
-        {filtered.length === 0 ? (
-          <EmptyState icon="👤" title="No customers found" body="Try adjusting the search or filter." />
         {loading ? (
           <div className="p-8 text-center text-gray-500">Loading customers...</div>
         ) : filtered.length === 0 ? (
@@ -262,7 +251,6 @@ export function CustomerListScreen({ onNav, onCustomer }: {
                         <div className="w-8 h-8 bg-gray-100 rounded-full flex items-center justify-center font-bold text-[13px] text-gray-700 flex-shrink-0">{c.name[0]}</div>
                         <div>
                           <p className="font-semibold text-[14px] text-gray-900">{c.name}</p>
-                          <p className="text-[12px] text-gray-400">{c.email}</p>
                           {c.email && <p className="text-[12px] text-gray-400">{c.email}</p>}
                         </div>
                       </div>
@@ -297,12 +285,9 @@ export function CustomerListScreen({ onNav, onCustomer }: {
 
 type ProfileTab = "history" | "payments" | "packages" | "loyalty" | "communications"
 
-export function CustomerProfileScreen({ customerId, onBack, onAppt }: {
-  customerId: string; onBack: () => void; onAppt: (ref: string) => void
 export function CustomerProfileScreen({ customerId, onBack, onAppt, onNav }: {
   customerId: string; onBack: () => void; onAppt: (ref: string) => void; onNav?: (v: OpsView) => void
 }) {
-  const cust = OPS_CUSTOMERS.find(c => c.id === customerId)
   const [cust, setCust] = useState<any>(null)
   const [custAppts, setCustAppts] = useState<any[]>([])
   const [paymentHistory, setPaymentHistory] = useState<any[]>([])
@@ -433,15 +418,6 @@ export function CustomerProfileScreen({ customerId, onBack, onAppt, onNav }: {
     </div>
   )
 
-  const [tab, setTab] = useState<ProfileTab>("history")
-
-  const custAppts = OPS_APPOINTMENTS.filter(a => a.customerId === cust.id)
-
-  // All payment records across all appointments for this customer
-  const paymentHistory = custAppts.flatMap(a =>
-    a.payments.map(p => ({ ...p, apptRef: a.ref, service: a.service, date: a.date }))
-  ).sort((a, b) => b.recordedAt.localeCompare(a.recordedAt))
-
   const tabs: { key: ProfileTab; label: string }[] = [
     { key:"history",        label:"History"        },
     { key:"payments",       label:"Payments"       },
@@ -537,12 +513,9 @@ export function CustomerProfileScreen({ customerId, onBack, onAppt, onNav }: {
             <h2 className="text-[22px] font-black text-gray-900">{cust.name}</h2>
             <SegmentBadge segment={cust.segment} />
           </div>
-          <p className="text-[13px] text-gray-500">{cust.phone} · {cust.email}</p>
-          <p className="text-[12px] text-gray-400 mt-0.5">Member since {cust.since}</p>
           <p className="text-[13px] text-gray-500">{cust.phone} {cust.email ? `· ${cust.email}` : ''}</p>
           <p className="text-[12px] text-gray-400 mt-0.5">Customer since {cust.since}</p>
         </div>
-        <SecondaryBtn label="Edit" onClick={() => {}} />
         <div className="flex gap-2">
           {onNav && (
             <PrimaryBtn label="Book appointment" onClick={() => onNav("createAppt")} />
@@ -596,7 +569,6 @@ export function CustomerProfileScreen({ customerId, onBack, onAppt, onNav }: {
                   className="w-full flex items-center gap-4 px-5 py-4 hover:bg-gray-50 transition-colors text-left">
                   <div className="flex-1 min-w-0">
                     <p className="font-semibold text-[14px] text-gray-900">{a.service}</p>
-                    <p className="text-[12px] text-gray-500 mt-0.5">{a.date} · {a.time} · {a.staff.split(" ")[0]}</p>
                     <p className="text-[12px] text-gray-500 mt-0.5">{a.date} · {a.time} · {a.staff}</p>
                     <p className="font-mono text-[11px] text-gray-400 mt-0.5">{a.ref}</p>
                   </div>
@@ -674,15 +646,12 @@ export function CustomerProfileScreen({ customerId, onBack, onAppt, onNav }: {
       {/* Communications tab */}
       {tab === "communications" && (
         <Card>
-          {custAppts.flatMap(a => a.notifications).length === 0 ? (
-          {custAppts.flatMap(a => a.notifications || []).length === 0 ? (
+          {custAppts.flatMap(a => (a.notifications || [])).length === 0 ? (
             <EmptyState icon="📨" title="No communications" body="No notifications have been sent to this customer." />
           ) : (
             <div className="divide-y divide-gray-50">
-              {custAppts.flatMap(a => a.notifications.map(n => ({
               {custAppts.flatMap(a => (a.notifications || []).map((n: any) => ({
                 ...n, apptRef: a.ref, service: a.service, date: a.date
-              }))).sort((a,b) => (b.sentAt ?? "").localeCompare(a.sentAt ?? "")).map((n, i) => (
               }))).sort((a: any, b: any) => (b.sentAt ?? "").localeCompare(a.sentAt ?? "")).map((n: any, i: number) => (
                 <div key={i} className="flex items-start justify-between px-5 py-4">
                   <div>

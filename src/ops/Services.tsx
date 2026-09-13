@@ -2,7 +2,6 @@ import React, { useState, useEffect } from "react"
 import { repositories } from "@/infrastructure/repositories/container"
 import type { ServiceEntity } from "@/application/repositories/interfaces"
 import { useTenantContext } from "@/application/tenant"
-import { fmtR, Card, SectionTitle, PrimaryBtn, EmptyState } from "./shared"
 import { fmtR, Card, SectionTitle, PrimaryBtn, SecondaryBtn, EmptyState } from "./shared"
 
 const DURATION_OPTIONS = ["15","20","30","45","60","75","90","120"]
@@ -13,9 +12,6 @@ export function ServiceListScreen() {
   const [services, setServices] = useState<ServiceEntity[]>([])
   const [loading, setLoading] = useState(true)
 
-  useEffect(() => {
-    if (!tenantId) return
-    let mounted = true
   // Add modal state
   const [showAddModal, setShowAddModal] = useState(false)
   const [addName, setAddName] = useState("")
@@ -39,22 +35,22 @@ export function ServiceListScreen() {
       setLoading(false)
       return
     }
+    let mounted = true
     setLoading(true)
     repositories.services.list(tenantId, true).then(data => {
       if (mounted) {
         setServices(data)
         setLoading(false)
       }
-      setServices(data)
-      setLoading(false)
     }).catch(() => {
-      setLoading(false)
+      if (mounted) setLoading(false)
     })
     return () => { mounted = false }
   }
 
   useEffect(() => {
-    loadServices()
+    const cleanup = loadServices()
+    return cleanup
   }, [tenantId])
 
   async function toggleActive(id: string) {
@@ -124,11 +120,9 @@ export function ServiceListScreen() {
     <div className="p-6 max-w-4xl mx-auto space-y-5">
       <div className="flex items-center justify-between flex-wrap gap-3">
         <SectionTitle>Services</SectionTitle>
-        <PrimaryBtn label="Add service" onClick={() => {}} icon="+" />
         <PrimaryBtn label="Add service" onClick={() => setShowAddModal(true)} icon="+" />
       </div>
 
-      {categories.map(cat => {
       {/* Add Service Modal */}
       {showAddModal && (
         <div className="fixed inset-0 bg-black/40 backdrop-blur-sm z-50 flex items-center justify-center p-4">
@@ -296,7 +290,6 @@ export function ServiceListScreen() {
                         <input type="checkbox" checked={s.active} onChange={() => toggleActive(s.id)} className="sr-only peer" />
                         <div className="w-10 h-5 bg-gray-200 rounded-full peer-checked:bg-gray-900 transition-colors after:content-[''] after:absolute after:top-0.5 after:left-0.5 after:bg-white after:rounded-full after:h-4 after:w-4 after:transition-all peer-checked:after:translate-x-5" />
                       </label>
-                      <button className="text-[12px] text-gray-400 hover:text-gray-700 font-semibold transition-colors">Edit</button>
                       <button
                         onClick={() => startEdit(s)}
                         className="text-[12px] text-gray-600 hover:text-gray-900 font-semibold px-2.5 py-1 rounded-lg border border-gray-200 hover:border-gray-400 transition-colors"
@@ -312,10 +305,8 @@ export function ServiceListScreen() {
         )
       })}
 
-      {services.length === 0 && (
       {!loading && services.length === 0 && (
         <Card>
-          <EmptyState icon="✂️" title="No services" body="Add your first service to start accepting bookings." cta="Add service" onCta={() => {}} />
           <EmptyState icon="✂️" title="No services" body="Add your first service to start accepting bookings." cta="Add service" onCta={() => setShowAddModal(true)} />
         </Card>
       )}

@@ -1,4 +1,3 @@
-import React, { useState } from "react"
 import React, { useState, useEffect } from "react"
 import type { OpsView, ExpenseRecord } from "./types"
 import { OPS_APPOINTMENTS, OPS_STAFF, OPS_REFUNDS, OPS_EXPENSES, TODAY } from "./data"
@@ -70,18 +69,6 @@ function SuccessToast({ msg }: { msg: string }) {
   )
 }
 
-// ─── DERIVED DATA HELPERS ─────────────────────────────────────────────────────
-
-const ALL_PAYMENTS = OPS_APPOINTMENTS.flatMap(a =>
-  a.payments.map(p => ({ ...p, apptRef: a.ref, customer: a.customer, customerId: a.customerId, date: a.date, service: a.service }))
-)
-
-const TOTAL_EXPENSES = OPS_EXPENSES.reduce((s, e) => s + e.amount, 0)
-const TODAY_PAID     = OPS_APPOINTMENTS.filter(a => a.date === TODAY).reduce((s, a) => s + a.paid, 0)
-const TODAY_CHARGED  = OPS_APPOINTMENTS.filter(a => a.date === TODAY).reduce((s, a) => s + a.charged, 0)
-const TOTAL_REFUNDED = OPS_REFUNDS.filter(r => r.status === "completed").reduce((s, r) => s + r.refundAmount, 0)
-const OUTSTANDING    = OPS_APPOINTMENTS.filter(a => a.paid < a.charged && !["cancelled","noShow"].includes(a.status))
-
 // ─── 1. FINANCIALS HUB ───────────────────────────────────────────────────────
 
 export function FinancialsHubScreen({ onNav, onAppt }: { onNav: (v: OpsView) => void; onAppt: (ref: string) => void }) {
@@ -89,7 +76,6 @@ export function FinancialsHubScreen({ onNav, onAppt }: { onNav: (v: OpsView) => 
   const [period, setPeriod] = useState("Today")
   const [loading, setLoading] = useState(true)
 
-  const operatingResult = TODAY_PAID - TOTAL_EXPENSES
   const [todayCharged, setTodayCharged] = useState(0)
   const [todayPaid, setTodayPaid] = useState(0)
   const [totalRefunded, setTotalRefunded] = useState(0)
@@ -99,7 +85,6 @@ export function FinancialsHubScreen({ onNav, onAppt }: { onNav: (v: OpsView) => 
   const [allPaymentsCount, setAllPaymentsCount] = useState(0)
   const [refundCount, setRefundCount] = useState(0)
 
-  const recentPayments = ALL_PAYMENTS.slice(-5).reverse()
   useEffect(() => {
     if (!tenantId) return
     let mounted = true
@@ -163,14 +148,10 @@ export function FinancialsHubScreen({ onNav, onAppt }: { onNav: (v: OpsView) => 
   const operatingResult = todayPaid - totalExpenses
 
   const quickLinks = [
-    { emoji:"💳", label:"All payments",        sub:`${ALL_PAYMENTS.length} records`,           nav:"paymentList"         as OpsView },
-    { emoji:"⚠️", label:"Outstanding",          sub:`${OUTSTANDING.length} unpaid`,             nav:"outstandingPayments"  as OpsView },
-    { emoji:"↩️", label:"Refunds",              sub:`${OPS_REFUNDS.length} total`,              nav:"refundList"           as OpsView },
     { emoji:"💳", label:"All payments",        sub:`${allPaymentsCount} records`,              nav:"paymentList"         as OpsView },
     { emoji:"⚠️", label:"Outstanding",          sub:`${outstandingCount} unpaid`,               nav:"outstandingPayments"  as OpsView },
     { emoji:"↩️", label:"Refunds",              sub:`${refundCount} total`,                     nav:"refundList"           as OpsView },
     { emoji:"📊", label:"Revenue breakdown",    sub:"By staff, source & method",                nav:"revenueDetail"        as OpsView },
-    { emoji:"🧾", label:"Expenses",             sub:`${fmtR(TOTAL_EXPENSES)} recorded`,         nav:"expenseList"          as OpsView },
     { emoji:"🧾", label:"Expenses",             sub:`${fmtR(totalExpenses)} recorded`,          nav:"expenseList"          as OpsView },
     { emoji:"📋", label:"Reports & exports",    sub:"CSV and PDF downloads",                    nav:"financialReports"     as OpsView },
   ]
@@ -185,42 +166,34 @@ export function FinancialsHubScreen({ onNav, onAppt }: { onNav: (v: OpsView) => 
         <PeriodTabs value={period} onChange={setPeriod} />
       </div>
 
-      {/* Summary tiles */}
       <div className="grid grid-cols-2 lg:grid-cols-4 gap-3">
         <Card className="p-4">
           <p className="text-[11px] font-bold uppercase tracking-widest text-gray-400 mb-1">Charged</p>
-          <p className="text-[22px] font-black text-gray-900">{fmtR(TODAY_CHARGED)}</p>
           <p className="text-[22px] font-black text-gray-900">{fmtR(todayCharged)}</p>
           <p className="text-[11px] text-gray-400 mt-0.5">{period.toLowerCase()}</p>
         </Card>
         <Card className="p-4">
           <p className="text-[11px] font-bold uppercase tracking-widest text-gray-400 mb-1">Collected</p>
-          <p className="text-[22px] font-black text-emerald-600">{fmtR(TODAY_PAID)}</p>
           <p className="text-[22px] font-black text-emerald-600">{fmtR(todayPaid)}</p>
           <p className="text-[11px] text-gray-400 mt-0.5">{period.toLowerCase()}</p>
         </Card>
         <Card className="p-4">
           <p className="text-[11px] font-bold uppercase tracking-widest text-gray-400 mb-1">Outstanding</p>
-          <p className="text-[22px] font-black text-amber-600">{fmtR(TODAY_CHARGED - TODAY_PAID)}</p>
-          <p className="text-[11px] text-gray-400 mt-0.5">{OUTSTANDING.length} appointments</p>
           <p className="text-[22px] font-black text-amber-600">{fmtR(Math.max(0, todayCharged - todayPaid))}</p>
           <p className="text-[11px] text-gray-400 mt-0.5">{outstandingCount} appointments</p>
         </Card>
         <Card className="p-4">
           <p className="text-[11px] font-bold uppercase tracking-widest text-gray-400 mb-1">Refunded</p>
-          <p className="text-[22px] font-black text-gray-700">{fmtR(TOTAL_REFUNDED)}</p>
           <p className="text-[22px] font-black text-gray-700">{fmtR(totalRefunded)}</p>
           <p className="text-[11px] text-gray-400 mt-0.5">completed refunds</p>
         </Card>
       </div>
 
-      {/* Operating result */}
       <Card className="p-5">
         <div className="flex items-center justify-between flex-wrap gap-4">
           <div>
             <p className="text-[11px] font-bold uppercase tracking-widest text-gray-400 mb-1">Operating result</p>
             <p className={`text-[28px] font-black ${operatingResult >= 0 ? "text-gray-900" : "text-red-600"}`}>{fmtR(Math.abs(operatingResult))}{operatingResult < 0 ? " deficit" : ""}</p>
-            <p className="text-[12px] text-gray-400 mt-1">Revenue collected ({fmtR(TODAY_PAID)}) − Expenses ({fmtR(TOTAL_EXPENSES)})</p>
             <p className="text-[12px] text-gray-400 mt-1">Revenue collected ({fmtR(todayPaid)}) − Expenses ({fmtR(totalExpenses)})</p>
           </div>
           <button onClick={() => onNav("revenueDetail")} className="px-4 py-2.5 border-2 border-gray-200 text-gray-700 rounded-xl text-[13px] font-semibold hover:border-gray-400 transition-colors">
@@ -230,7 +203,6 @@ export function FinancialsHubScreen({ onNav, onAppt }: { onNav: (v: OpsView) => 
       </Card>
 
       <div className="grid lg:grid-cols-3 gap-5">
-        {/* Quick links */}
         <div className="lg:col-span-2">
           <p className="text-[13px] font-black uppercase tracking-widest text-gray-400 mb-3">Financial sections</p>
           <div className="grid sm:grid-cols-2 gap-3">
@@ -248,14 +220,12 @@ export function FinancialsHubScreen({ onNav, onAppt }: { onNav: (v: OpsView) => 
           </div>
         </div>
 
-        {/* Recent payments */}
         <div>
           <div className="flex items-center justify-between mb-3">
             <p className="text-[13px] font-black uppercase tracking-widest text-gray-400">Recent payments</p>
             <button onClick={() => onNav("paymentList")} className="text-[12px] font-semibold text-gray-500 hover:text-gray-900">View all →</button>
           </div>
           <Card>
-            {recentPayments.length === 0 ? (
             {loading ? (
               <div className="py-10 text-center text-gray-400 text-[13px]">Loading payments...</div>
             ) : recentPayments.length === 0 ? (
@@ -268,7 +238,6 @@ export function FinancialsHubScreen({ onNav, onAppt }: { onNav: (v: OpsView) => 
                   <div key={p.id} className="flex items-center justify-between px-4 py-3.5">
                     <div>
                       <p className="font-semibold text-[13px] text-gray-900">{p.customer}</p>
-                      <p className="font-semibold text-[13px] text-gray-900">{p.apptRef}</p>
                       <div className="flex items-center gap-1.5 mt-0.5">
                         <span className="text-[11px] font-mono text-gray-400">{p.apptRef}</span>
                         <MethodBadge method={p.method} />
@@ -282,14 +251,11 @@ export function FinancialsHubScreen({ onNav, onAppt }: { onNav: (v: OpsView) => 
             )}
           </Card>
 
-          {OUTSTANDING.length > 0 && (
           {outstandingCount > 0 && (
             <div className="mt-3">
               <button onClick={() => onNav("outstandingPayments")}
                 className="w-full flex items-center justify-between px-4 py-3.5 bg-amber-50 border border-amber-100 rounded-xl hover:bg-amber-100 transition-colors text-left">
                 <div>
-                  <p className="font-bold text-[13px] text-amber-900">{OUTSTANDING.length} outstanding {OUTSTANDING.length === 1 ? "payment" : "payments"}</p>
-                  <p className="text-[12px] text-amber-700">{fmtR(OUTSTANDING.reduce((s, a) => s + (a.charged - a.paid), 0))} total due</p>
                   <p className="font-bold text-[13px] text-amber-900">{outstandingCount} outstanding {outstandingCount === 1 ? "payment" : "payments"}</p>
                   <p className="text-[12px] text-amber-700">{fmtR(Math.max(0, todayCharged - todayPaid))} total due</p>
                 </div>
@@ -313,8 +279,6 @@ export function PaymentListScreen({ onBack, onNav }: { onBack: () => void; onNav
   const [period,  setPeriod]  = useState("Today")
   const [status,  setStatus]  = useState("All")
 
-  const filtered = ALL_PAYMENTS.filter(p => {
-    if (period === "Today" && p.date !== TODAY) return false
   useEffect(() => {
     if (!tenantId) return
     let mounted = true
@@ -376,7 +340,6 @@ export function PaymentListScreen({ onBack, onNav }: { onBack: () => void; onNav
       </div>
 
       <Card>
-        {filtered.length === 0 ? (
         {loading ? (
           <div className="p-8 text-center text-gray-500">Loading payments...</div>
         ) : filtered.length === 0 ? (
@@ -419,7 +382,6 @@ export function PaymentListScreen({ onBack, onNav }: { onBack: () => void; onNav
 export function OutstandingPaymentsScreen({ onBack, onAppt, onRecord }: {
   onBack: () => void; onAppt: (ref: string) => void; onRecord: (ref: string) => void
 }) {
-  const totalOutstanding = OUTSTANDING.reduce((s, a) => s + (a.charged - a.paid), 0)
   const { tenantId } = useTenantContext()
   const [outstanding, setOutstanding] = useState<any[]>([])
   const [loading, setLoading] = useState(true)
@@ -460,27 +422,23 @@ export function OutstandingPaymentsScreen({ onBack, onAppt, onRecord }: {
       <BackBtn onClick={onBack} />
       <SectionTitle>Outstanding payments</SectionTitle>
 
-      {OUTSTANDING.length > 0 && (
       {outstanding.length > 0 && (
         <Card className="p-5 mb-5 flex items-center justify-between flex-wrap gap-4">
           <div>
             <p className="text-[11px] font-bold uppercase tracking-widest text-gray-400 mb-1">Total outstanding</p>
             <p className="text-[28px] font-black text-amber-600">{fmtR(totalOutstanding)}</p>
           </div>
-          <p className="text-[13px] text-gray-500">{OUTSTANDING.length} appointment{OUTSTANDING.length !== 1 ? "s" : ""} with unpaid or partial balance</p>
           <p className="text-[13px] text-gray-500">{outstanding.length} appointment{outstanding.length !== 1 ? "s" : ""} with unpaid or partial balance</p>
         </Card>
       )}
 
       <Card>
-        {OUTSTANDING.length === 0 ? (
         {loading ? (
           <div className="p-8 text-center text-gray-500">Loading outstanding payments...</div>
         ) : outstanding.length === 0 ? (
           <EmptyState icon="✅" title="No outstanding payments" body="All appointments are fully settled." />
         ) : (
           <div className="divide-y divide-gray-50">
-            {OUTSTANDING.map(a => {
             {outstanding.map(a => {
               const due = a.charged - a.paid
               return (
@@ -520,7 +478,6 @@ export function RefundListScreen({ onBack, onRefund }: { onBack: () => void; onR
   const [search,  setSearch]  = useState("")
   const [status,  setStatus]  = useState("All")
 
-  const filtered = OPS_REFUNDS.filter(r => {
   useEffect(() => {
     if (!tenantId) return
     let mounted = true
@@ -574,7 +531,6 @@ export function RefundListScreen({ onBack, onRefund }: { onBack: () => void; onR
       </div>
 
       <Card>
-        {filtered.length === 0 ? (
         {loading ? (
           <div className="p-8 text-center text-gray-500">Loading refunds...</div>
         ) : filtered.length === 0 ? (
@@ -613,24 +569,9 @@ export function RefundListScreen({ onBack, onRefund }: { onBack: () => void; onR
 // ─── 5. REFUND DETAIL ─────────────────────────────────────────────────────────
 
 export function RefundDetailScreen({ refundId, onBack, onAppt }: { refundId: string; onBack: () => void; onAppt: (ref: string) => void }) {
-  const r = OPS_REFUNDS.find(x => x.id === refundId) ?? OPS_REFUNDS[0]
   const [refund, setRefund] = useState<any>(null)
   const [loading, setLoading] = useState(true)
 
-  const timeline = [
-    { label:"Appointment booked", time:"See booking" },
-    { label:"Cancellation requested", time:r.requestedAt },
-    { label:"Refund requested", time:r.requestedAt },
-    ...(r.status === "processing" || r.status === "completed" || r.status === "failed"
-      ? [{ label:"Refund processing", time:r.requestedAt.replace(/(\d{2}:\d{2})/, (m, t) => `${t} + 1 min`) }]
-      : []),
-    ...(r.status === "completed" && r.completedAt
-      ? [{ label:"Refund completed", time:r.completedAt }]
-      : []),
-    ...(r.status === "failed"
-      ? [{ label:"Refund failed", time:"" }]
-      : []),
-  ]
   useEffect(() => {
     if (!refundId) {
       setLoading(false)
@@ -688,8 +629,8 @@ export function RefundDetailScreen({ refundId, onBack, onAppt }: { refundId: str
       ? [{ label:"Refund failed", time:"" }]
       : []),
   ]
+
   return (
-    <div className="p-6 max-w-3xl mx-auto">
     <div className="p-6 max-w-3xl mx-auto space-y-5">
       <BackBtn onClick={onBack} />
       <SectionTitle>Refund {r.refundRef}</SectionTitle>
@@ -719,14 +660,6 @@ export function RefundDetailScreen({ refundId, onBack, onAppt }: { refundId: str
           <p className="font-semibold text-[13px] text-emerald-800">Refund completed {r.completedAt && `· ${r.completedAt}`}</p>
         </div>
       )}
-      <Card className="divide-y divide-gray-50 px-5">
-        <OpsDetailRow label="Refund reference" value={r.refundRef} />
-        <OpsDetailRow label="Appointment reference" value={r.apptRef} />
-        <OpsDetailRow label="Refund amount" value={fmtR(r.refundAmount)} />
-        <OpsDetailRow label="Status" value={<RefundStatusBadge status={r.status} />} />
-        <OpsDetailRow label="Requested at" value={r.requestedAt} />
-        {r.completedAt && <OpsDetailRow label="Processed at" value={r.completedAt} />}
-      </Card>
 
       <div className="grid lg:grid-cols-2 gap-5">
         <div className="space-y-4">
@@ -749,7 +682,7 @@ export function RefundDetailScreen({ refundId, onBack, onAppt }: { refundId: str
             <div className="py-3 border-b border-gray-100">
               <p className="text-[11px] font-bold uppercase tracking-widest text-gray-400">Calculation</p>
             </div>
-            <OpsDetailRow label="Original amount"    value={fmtR(r.originalAmount)} />
+            <OpsDetailRow label="Original amount"    value={fmtR(r.originalAmount || r.refundAmount)} />
             {r.feePercent > 0 ? (
               <>
                 <OpsDetailRow label={`Cancellation fee (${r.feePercent}%)`} value={`− ${fmtR(r.feeAmount)}`} />
@@ -792,8 +725,6 @@ export function RefundDetailScreen({ refundId, onBack, onAppt }: { refundId: str
             View appointment →
           </button>
         </div>
-      <div className="flex gap-3">
-        <PrimaryBtn label="View appointment" onClick={() => onAppt(r.apptRef)} />
       </div>
     </div>
   )
@@ -806,11 +737,6 @@ export function RevenueDetailScreen({ onBack }: { onBack: () => void }) {
   const [period, setPeriod] = useState("Month")
   const [loading, setLoading] = useState(true)
 
-  const allAppts = OPS_APPOINTMENTS
-  const totalCharged = allAppts.reduce((s, a) => s + a.charged, 0)
-  const totalPaid    = allAppts.reduce((s, a) => s + a.paid, 0)
-  const totalOutstanding = totalCharged - totalPaid
-  const operatingResult  = totalPaid - TOTAL_EXPENSES
   const [totalCharged, setTotalCharged] = useState(0)
   const [totalPaid, setTotalPaid] = useState(0)
   const [totalExpenses, setTotalExpenses] = useState(0)
@@ -819,12 +745,6 @@ export function RevenueDetailScreen({ onBack }: { onBack: () => void }) {
   const [sourceRevenue, setSourceRevenue] = useState<any[]>([])
   const [methodRevenue, setMethodRevenue] = useState<any[]>([])
 
-  // Revenue by staff
-  const staffRevenue = OPS_STAFF.map(s => ({
-    ...s,
-    completed: OPS_APPOINTMENTS.filter(a => a.staffId === s.id && a.status === "completed").length,
-    revenue:   OPS_APPOINTMENTS.filter(a => a.staffId === s.id && a.status === "completed").reduce((x, a) => x + a.paid, 0),
-  })).filter(s => s.active)
   useEffect(() => {
     if (!tenantId) return
     let mounted = true
@@ -840,13 +760,6 @@ export function RevenueDetailScreen({ onBack }: { onBack: () => void }) {
       const expenses = exps.reduce((s, e) => s + e.amount, 0)
       const refunded = refs.filter(r => r.status === "completed").reduce((s, r) => s + r.refundAmount, 0)
 
-  // Revenue by source
-  const sourceGroups = ["online","qr","manual"] as const
-  const sourceRevenue = sourceGroups.map(src => {
-    const appts = allAppts.filter(a => a.source === src)
-    const rev   = appts.reduce((s, a) => s + a.paid, 0)
-    return { src, rev, count: appts.length, pct: totalPaid > 0 ? Math.round((rev / totalPaid) * 100) : 0 }
-  })
       const staffRev = staff.filter(s => s.active).map(s => {
         const myAppts = appts.filter(a => a.staffId === s.id && a.status === "completed")
         const revenue = myAppts.reduce((sum, a) => sum + (a.totalPaid || a.totalCharged), 0)
@@ -859,12 +772,6 @@ export function RevenueDetailScreen({ onBack }: { onBack: () => void }) {
         }
       })
 
-  // Revenue by method
-  const methods = ["card","cash","yoco","payshap","other","payAtShop"] as const
-  const methodRevenue = methods.map(m => ({
-    method: m,
-    amount: ALL_PAYMENTS.filter(p => p.method === m && p.status === "successful").reduce((s, p) => s + p.amount, 0),
-  })).filter(x => x.amount > 0)
       const sources = ["online", "qr", "manual"] as const
       const srcRev = sources.map(src => {
         const myAppts = appts.filter(a => a.bookingSource === src)
@@ -912,23 +819,6 @@ export function RevenueDetailScreen({ onBack }: { onBack: () => void }) {
         <PeriodTabs value={period} onChange={setPeriod} />
       </div>
 
-      {/* Summary */}
-      <div className="grid grid-cols-2 lg:grid-cols-3 gap-3">
-        {[
-          { label:"Charged",          value:fmtR(totalCharged),      accent:""                  },
-          { label:"Collected",        value:fmtR(totalPaid),         accent:"text-emerald-600"  },
-          { label:"Outstanding",      value:fmtR(totalOutstanding),  accent:"text-amber-600"    },
-          { label:"Refunded",         value:fmtR(TOTAL_REFUNDED),    accent:"text-gray-600"     },
-          { label:"Expenses",         value:fmtR(TOTAL_EXPENSES),    accent:"text-red-600"      },
-          { label:"Operating result", value:fmtR(operatingResult),   accent:operatingResult >= 0 ? "text-gray-900" : "text-red-600" },
-        ].map(t => (
-          <Card key={t.label} className="p-4">
-            <p className="text-[11px] font-bold uppercase tracking-widest text-gray-400 mb-1">{t.label}</p>
-            <p className={`text-[20px] font-black ${t.accent || "text-gray-900"}`}>{t.value}</p>
-          </Card>
-        ))}
-      </div>
-      <p className="text-[11px] text-gray-400">Based on BookYourBarber recorded activity. Not formal accounting.</p>
       {loading ? (
         <div className="p-8 text-center text-gray-500">Loading revenue metrics...</div>
       ) : (
@@ -950,23 +840,6 @@ export function RevenueDetailScreen({ onBack }: { onBack: () => void }) {
             ))}
           </div>
 
-      {/* By staff */}
-      <div>
-        <p className="text-[13px] font-black uppercase tracking-widest text-gray-400 mb-3">Revenue by staff</p>
-        <Card>
-          <div className="px-5 py-3 border-b border-gray-100">
-            <p className="text-[11px] text-gray-400">Revenue associated with completed appointments. Commissions are not calculated.</p>
-          </div>
-          <div className="divide-y divide-gray-50">
-            {staffRevenue.map(s => (
-              <div key={s.id} className="flex items-center gap-4 px-5 py-4">
-                <img src={`https://images.unsplash.com/${s.photo}?w=64&h=64&fit=crop&crop=face&auto=format`} alt={s.name}
-                  className="w-9 h-9 rounded-full object-cover bg-gray-100 flex-shrink-0" />
-                <div className="flex-1">
-                  <p className="font-semibold text-[14px] text-gray-900">{s.name}</p>
-                  <p className="text-[12px] text-gray-500">{s.completed} completed appointments</p>
-                </div>
-                <p className="font-bold text-[16px] text-gray-900">{fmtR(s.revenue || s.monthRevenue)}</p>
           {/* By staff */}
           <div>
             <p className="text-[13px] font-black uppercase tracking-widest text-gray-400 mb-3">Revenue by staff</p>
@@ -988,26 +861,9 @@ export function RevenueDetailScreen({ onBack }: { onBack: () => void }) {
                   </div>
                 ))}
               </div>
-            ))}
             </Card>
           </div>
-        </Card>
-      </div>
 
-      {/* By source */}
-      <div>
-        <p className="text-[13px] font-black uppercase tracking-widest text-gray-400 mb-3">Revenue by booking source</p>
-        <Card>
-          <div className="divide-y divide-gray-50">
-            {sourceRevenue.map(s => (
-              <div key={s.src} className="flex items-center justify-between px-5 py-4">
-                <div className="flex items-center gap-3">
-                  <span className="capitalize font-semibold text-[14px] text-gray-900">{s.src === "qr" ? "QR code" : s.src.charAt(0).toUpperCase() + s.src.slice(1)}</span>
-                  <span className="text-[12px] text-gray-400">{s.count} bookings</span>
-                </div>
-                <div className="flex items-center gap-4">
-                  <div className="w-24 bg-gray-100 rounded-full h-2">
-                    <div className="bg-gray-900 h-2 rounded-full" style={{ width:`${s.pct}%` }} />
           {/* By source */}
           <div>
             <p className="text-[13px] font-black uppercase tracking-widest text-gray-400 mb-3">Revenue by booking source</p>
@@ -1027,29 +883,11 @@ export function RevenueDetailScreen({ onBack }: { onBack: () => void }) {
                       <span className="font-bold text-[15px] text-gray-900 w-20 text-right">{fmtR(s.rev)}</span>
                     </div>
                   </div>
-                  <span className="text-[13px] font-semibold text-gray-500 w-8 text-right">{s.pct}%</span>
-                  <span className="font-bold text-[15px] text-gray-900 w-20 text-right">{fmtR(s.rev)}</span>
-                </div>
                 ))}
               </div>
-            ))}
             </Card>
           </div>
-        </Card>
-      </div>
 
-      {/* By method */}
-      <div>
-        <p className="text-[13px] font-black uppercase tracking-widest text-gray-400 mb-3">Revenue by payment method</p>
-        <Card>
-          {methodRevenue.length === 0 ? (
-            <EmptyState icon="💳" title="No payment data" body="Payment method breakdown will appear once payments are recorded." />
-          ) : (
-            <div className="divide-y divide-gray-50">
-              {methodRevenue.map(m => (
-                <div key={m.method} className="flex items-center justify-between px-5 py-4">
-                  <MethodBadge method={m.method} />
-                  <p className="font-bold text-[16px] text-gray-900">{fmtR(m.amount)}</p>
           {/* By method */}
           <div>
             <p className="text-[13px] font-black uppercase tracking-widest text-gray-400 mb-3">Revenue by payment method</p>
@@ -1065,11 +903,6 @@ export function RevenueDetailScreen({ onBack }: { onBack: () => void }) {
                     </div>
                   ))}
                 </div>
-              ))}
-            </div>
-          )}
-        </Card>
-      </div>
               )}
             </Card>
           </div>
@@ -1084,7 +917,6 @@ export function RevenueDetailScreen({ onBack }: { onBack: () => void }) {
 export function ExpenseListScreen({ onBack, onAdd, onEdit }: {
   onBack: () => void; onAdd: () => void; onEdit: (id: string) => void
 }) {
-  const [expenses,  setExpenses]  = useState(OPS_EXPENSES)
   const { tenantId } = useTenantContext()
   const [expenses,  setExpenses]  = useState<ExpenseEntity[]>([])
   const [loading,   setLoading]   = useState(true)
@@ -1113,11 +945,6 @@ export function ExpenseListScreen({ onBack, onAdd, onEdit }: {
   const catTotals = cats.map(c => ({ cat:c, total:expenses.filter(e => e.category === c).reduce((s,e) => s + e.amount, 0) }))
     .sort((a, b) => b.total - a.total)
 
-  function confirmDelete(id: string) {
-    setExpenses(es => es.filter(e => e.id !== id))
-    setDeleting(null)
-    setDeleted(true)
-    setTimeout(() => setDeleted(false), 2500)
   async function confirmDelete(id: string) {
     try {
       await repositories.expenses.delete(id)
@@ -1138,7 +965,6 @@ export function ExpenseListScreen({ onBack, onAdd, onEdit }: {
 
       {deleted && <div className="bg-gray-50 border border-gray-200 rounded-xl px-4 py-3 text-[13px] font-semibold text-gray-600">Expense deleted.</div>}
 
-      {/* Summary */}
       <div className="grid sm:grid-cols-2 gap-4">
         <Card className="p-5">
           <p className="text-[11px] font-bold uppercase tracking-widest text-gray-400 mb-1">Total expenses</p>
@@ -1159,7 +985,6 @@ export function ExpenseListScreen({ onBack, onAdd, onEdit }: {
       </div>
 
       <Card>
-        {expenses.length === 0 ? (
         {loading ? (
           <div className="p-8 text-center text-gray-500">Loading expenses...</div>
         ) : expenses.length === 0 ? (
@@ -1172,7 +997,6 @@ export function ExpenseListScreen({ onBack, onAdd, onEdit }: {
                   <div className="flex-1 min-w-0">
                     <div className="flex items-center gap-2 mb-0.5">
                       <CategoryBadge cat={e.category} />
-                      <span className="text-[12px] text-gray-400">{e.date}</span>
                       <span className="text-[12px] text-gray-400">{e.expenseDate}</span>
                     </div>
                     <p className="font-semibold text-[14px] text-gray-900 mt-0.5">{e.description}</p>
@@ -1189,7 +1013,6 @@ export function ExpenseListScreen({ onBack, onAdd, onEdit }: {
                     <div className="flex gap-3 items-center mb-3">
                       <CategoryBadge cat={e.category} />
                       <span className="text-[13px] font-semibold text-gray-700">{fmtR(e.amount)}</span>
-                      <span className="text-[12px] text-gray-500">{e.date}</span>
                       <span className="text-[12px] text-gray-500">{e.expenseDate}</span>
                     </div>
                     <div className="flex gap-2">
@@ -1212,19 +1035,14 @@ export function ExpenseListScreen({ onBack, onAdd, onEdit }: {
 const EXPENSE_CATEGORIES = ["Rent","Electricity","Products","Salaries","Marketing","Transport","Other"] as const
 
 export function AddExpenseScreen({ onBack, onDone }: { onBack: () => void; onDone: () => void }) {
-  const [category,    setCategory]    = useState<ExpenseRecord["category"]>("Products")
   const { tenantId } = useTenantContext()
   const [category,    setCategory]    = useState<ExpenseEntity["category"]>("Products")
   const [amount,      setAmount]      = useState("")
-  const [date,        setDate]        = useState(TODAY)
   const [date,        setDate]        = useState(() => new Date().toISOString().slice(0, 10))
   const [description, setDescription] = useState("")
   const [saved,       setSaved]       = useState(false)
   const [isSaving,    setIsSaving]    = useState(false)
 
-  function handleSave() {
-    setSaved(true)
-    setTimeout(() => onDone(), 1500)
   async function handleSave() {
     if (!tenantId || !amount || !description.trim()) return
     setIsSaving(true)
@@ -1254,10 +1072,8 @@ export function AddExpenseScreen({ onBack, onDone }: { onBack: () => void; onDon
         <Card className="p-5 space-y-4">
           <div>
             <label className="block text-[11px] font-bold uppercase tracking-widest text-gray-400 mb-2">Category</label>
-            <select value={category} onChange={e => setCategory(e.target.value as ExpenseRecord["category"])}
             <select value={category} onChange={e => setCategory(e.target.value as ExpenseEntity["category"])}
               className="w-full px-4 py-3 border-2 border-gray-200 rounded-xl text-[14px] focus:border-gray-900 outline-none bg-white appearance-none">
-              {EXPENSE_CATEGORIES.map(c => <option key={c}>{c}</option>)}
               {EXPENSE_CATEGORIES.map(c => <option key={c} value={c}>{c}</option>)}
             </select>
           </div>
@@ -1282,10 +1098,8 @@ export function AddExpenseScreen({ onBack, onDone }: { onBack: () => void; onDon
         </Card>
 
         <div className="flex gap-3">
-          <button onClick={handleSave} disabled={!amount || !description}
           <button onClick={handleSave} disabled={!amount || !description.trim() || isSaving}
             className="flex-1 py-3.5 bg-gray-900 text-white rounded-xl font-bold text-[14px] hover:bg-gray-800 transition-colors disabled:bg-gray-100 disabled:text-gray-400 disabled:cursor-not-allowed">
-            Save expense
             {isSaving ? "Saving..." : "Save expense"}
           </button>
           <SecondaryBtn label="Cancel" onClick={onBack} />
@@ -1298,11 +1112,6 @@ export function AddExpenseScreen({ onBack, onDone }: { onBack: () => void; onDon
 // ─── 9. EDIT EXPENSE ──────────────────────────────────────────────────────────
 
 export function EditExpenseScreen({ expenseId, onBack, onDone }: { expenseId: string; onBack: () => void; onDone: () => void }) {
-  const orig = OPS_EXPENSES.find(e => e.id === expenseId) ?? OPS_EXPENSES[0]
-  const [category,    setCategory]    = useState<ExpenseRecord["category"]>(orig.category)
-  const [amount,      setAmount]      = useState(String(orig.amount))
-  const [date,        setDate]        = useState(orig.date)
-  const [description, setDescription] = useState(orig.description)
   const [category,    setCategory]    = useState<ExpenseEntity["category"]>("Products")
   const [amount,      setAmount]      = useState("")
   const [date,        setDate]        = useState("")
@@ -1311,9 +1120,6 @@ export function EditExpenseScreen({ expenseId, onBack, onDone }: { expenseId: st
   const [loading,     setLoading]     = useState(true)
   const [isSaving,    setIsSaving]    = useState(false)
 
-  function handleSave() {
-    setSaved(true)
-    setTimeout(() => onDone(), 1500)
   useEffect(() => {
     if (!expenseId) return
     let mounted = true
@@ -1363,10 +1169,8 @@ export function EditExpenseScreen({ expenseId, onBack, onDone }: { expenseId: st
         <Card className="p-5 space-y-4">
           <div>
             <label className="block text-[11px] font-bold uppercase tracking-widest text-gray-400 mb-2">Category</label>
-            <select value={category} onChange={e => setCategory(e.target.value as ExpenseRecord["category"])}
             <select value={category} onChange={e => setCategory(e.target.value as ExpenseEntity["category"])}
               className="w-full px-4 py-3 border-2 border-gray-200 rounded-xl text-[14px] focus:border-gray-900 outline-none bg-white appearance-none">
-              {EXPENSE_CATEGORIES.map(c => <option key={c}>{c}</option>)}
               {EXPENSE_CATEGORIES.map(c => <option key={c} value={c}>{c}</option>)}
             </select>
           </div>
@@ -1391,9 +1195,6 @@ export function EditExpenseScreen({ expenseId, onBack, onDone }: { expenseId: st
         </Card>
 
         <div className="flex gap-3">
-          <button onClick={handleSave}
-            className="flex-1 py-3.5 bg-gray-900 text-white rounded-xl font-bold text-[14px] hover:bg-gray-800 transition-colors">
-            Save changes
           <button onClick={handleSave} disabled={!amount || !description.trim() || isSaving}
             className="flex-1 py-3.5 bg-gray-900 text-white rounded-xl font-bold text-[14px] hover:bg-gray-800 transition-colors disabled:opacity-50">
             {isSaving ? "Saving..." : "Save changes"}
@@ -1409,13 +1210,11 @@ export function EditExpenseScreen({ expenseId, onBack, onDone }: { expenseId: st
 
 type ExportState = "idle" | "preparing" | "ready" | "error"
 
-function ReportCard({ title, description, onExport }: { title: string; description: string; onExport: () => void }) {
 function ReportCard({ title, description }: { title: string; description: string }) {
   const [state, setState] = useState<ExportState>("idle")
 
   function handleExport(format: "csv" | "pdf") {
     setState("preparing")
-    setTimeout(() => setState("ready"), 2000)
     setTimeout(() => {
       try {
         const header = "Date,Type,Description,Amount,Status\n"
@@ -1457,7 +1256,6 @@ function ReportCard({ title, description }: { title: string; description: string
         <div className="flex items-center gap-3">
           <div className="flex items-center gap-2 bg-emerald-50 border border-emerald-100 rounded-xl px-4 py-2.5">
             <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="#059669" strokeWidth="2.5" strokeLinecap="round"><path d="M12 15V3m0 12l-4-4m4 4l4-4M2 17l.621 2.485A2 2 0 004.561 21h14.878a2 2 0 001.94-1.515L22 17"/></svg>
-            <button className="text-[13px] font-bold text-emerald-700 underline underline-offset-2">Download report</button>
             <span className="text-[13px] font-bold text-emerald-700">Report downloaded!</span>
           </div>
           <button onClick={() => setState("idle")} className="text-[12px] text-gray-400 hover:text-gray-700">Reset</button>
@@ -1495,7 +1293,6 @@ export function FinancialReportsScreen({ onBack }: { onBack: () => void }) {
 
       <div className="grid sm:grid-cols-2 gap-4">
         {reports.map(r => (
-          <ReportCard key={r.title} title={r.title} description={r.description} onExport={() => {}} />
           <ReportCard key={r.title} title={r.title} description={r.description} />
         ))}
       </div>

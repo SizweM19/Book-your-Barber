@@ -1,6 +1,5 @@
 'use client'
 
-import React, { useState } from 'react'
 import React, { useState, Suspense } from 'react'
 import { useRouter } from 'next/navigation'
 import {
@@ -15,7 +14,6 @@ import {
   CancellationPolicyScreen,
 } from '@/ops/Settings'
 
-export default function SettingsPage() {
 function SettingsContent() {
   const router = useRouter()
   const [activeScreen, setActiveScreen] = useState<string>('hub')
@@ -53,7 +51,6 @@ function SettingsContent() {
     case 'settingsEditService':
       return <EditServiceScreen serviceId={editServiceId} onBack={back} onDone={back} />
     case 'settingsAddStaff':
-      return <AddStaffScreen onBack={back} onDone={back} />
       return <AddStaffScreen onBack={back} onDone={() => router.push('/app/staff')} />
     case 'settingsAvailability':
       return <AvailabilityScreen onBack={back} />

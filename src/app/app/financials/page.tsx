@@ -1,6 +1,5 @@
 'use client'
 
-import React, { useState } from 'react'
 import React, { useState, Suspense } from 'react'
 import { useRouter } from 'next/navigation'
 import {
@@ -17,7 +16,6 @@ import {
 } from '@/ops/Financials'
 import { RecordPaymentScreen } from '@/ops/Appointments'
 
-export default function FinancialsPage() {
 function FinancialsContent() {
   const router = useRouter()
   const [activeSubScreen, setActiveSubScreen] = useState<string>('hub')
@@ -49,7 +47,6 @@ function FinancialsContent() {
     case 'paymentList':
       return <PaymentListScreen onBack={back} onNav={navTo as any} />
     case 'outstandingPayments':
-      return <OutstandingPaymentsScreen onBack={back} onAppt={handleAppt} onRecord={() => navTo('recordPayment')} />
       return (
         <OutstandingPaymentsScreen
           onBack={back}
@@ -61,7 +58,6 @@ function FinancialsContent() {
         />
       )
     case 'recordPayment':
-      return <RecordPaymentScreen onBack={back} onDone={back} />
       return <RecordPaymentScreen apptRef={selectedApptRef || undefined} onBack={back} onDone={back} />
     case 'refundList':
       return <RefundListScreen onBack={back} onRefund={id => { setSelectedRefundId(id); navTo('refundDetail') }} />

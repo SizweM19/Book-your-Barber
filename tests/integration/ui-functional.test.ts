@@ -11,3 +11,4 @@ describe('UI Functional Integration Tests', () => {
     expect(typeof window).toBe('undefined') // Unit tests run in node environment by default
   })
 })
+

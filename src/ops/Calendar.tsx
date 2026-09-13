@@ -1,10 +1,9 @@
 import React, { useState, useEffect, useRef } from "react"
 import type { OpsView } from "./types"
-import { OPS_APPOINTMENTS, OPS_STAFF, DAY_SLOTS, TODAY } from "./data"
+import { DAY_SLOTS } from "./data"
 import { ApptBadge, PayBadge, PrimaryBtn, EmptyState } from "./shared"
 import { repositories } from "@/infrastructure/repositories/container"
 import { useTenantContext } from "@/application/tenant"
-
 
 // Pixel height per 30-minute slot in the staff-column grid
 const SLOT_HEIGHT = 56
@@ -49,7 +48,7 @@ function CurrentTimeBar() {
 function ApptBlock({
   appt, onClick,
 }: {
-  appt: typeof OPS_APPOINTMENTS[number]
+  appt: any
   onClick: () => void
 }) {
   const heightPx = minutesToPx(appt.duration)
@@ -86,8 +85,8 @@ export function CalendarDayScreen({ onNav, onAppt }: CalendarDayProps) {
   const { tenantId } = useTenantContext()
   const [selectedDate, setSelectedDate] = useState<string>(() => new Date().toISOString().split("T")[0])
   const [staffFilter, setStaffFilter] = useState("all")
-  const [allAppts, setAllAppts] = useState<typeof OPS_APPOINTMENTS>([])
-  const [staffList, setStaffList] = useState(OPS_STAFF)
+  const [allAppts, setAllAppts] = useState<any[]>([])
+  const [staffList, setStaffList] = useState<any[]>([])
   const [loading, setLoading] = useState(true)
 
   function shiftDate(days: number) {
@@ -302,14 +301,6 @@ export function CalendarDayScreen({ onNav, onAppt }: CalendarDayProps) {
 
 // ─── CALENDAR WEEK ────────────────────────────────────────────────────────────
 
-const WEEK_DAYS = [
-  { label:"Mon", date:"2026-09-07", num:"7"  },
-  { label:"Tue", date:"2026-09-08", num:"8"  },
-  { label:"Wed", date:"2026-09-09", num:"9"  },
-  { label:"Thu", date:"2026-09-10", num:"10" },
-  { label:"Fri", date:"2026-09-11", num:"11" },
-  { label:"Sat", date:"2026-09-12", num:"12" },
-]
 function getWeekDays(baseDate: Date) {
   const d = new Date(baseDate)
   const day = d.getDay()
@@ -354,7 +345,7 @@ export function CalendarWeekScreen({ onNav, onAppt }: CalendarWeekProps) {
   }
 
   const [activeDayMobile, setActiveDayMobile] = useState(() => new Date().toISOString().split("T")[0])
-  const [allAppts, setAllAppts] = useState<typeof OPS_APPOINTMENTS>([])
+  const [allAppts, setAllAppts] = useState<any[]>([])
   const [loading, setLoading] = useState(true)
 
   const gridRef = useRef<HTMLDivElement>(null)
@@ -417,12 +408,9 @@ export function CalendarWeekScreen({ onNav, onAppt }: CalendarWeekProps) {
     <div className="flex flex-col h-screen overflow-hidden">
       <div className="flex items-center justify-between px-6 py-4 border-b border-gray-100 bg-white flex-shrink-0 flex-wrap gap-3">
         <div className="flex items-center gap-3">
-          <button className="w-8 h-8 flex items-center justify-center rounded-full hover:bg-gray-100">
           <button onClick={() => shiftWeek(-1)} className="w-8 h-8 flex items-center justify-center rounded-full hover:bg-gray-100">
             <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round"><path d="M15 18l-6-6 6-6"/></svg>
           </button>
-          <h2 className="text-[15px] font-bold text-gray-900">7–12 September 2026</h2>
-          <button className="w-8 h-8 flex items-center justify-center rounded-full hover:bg-gray-100">
           <h2 className="text-[15px] font-bold text-gray-900">{weekTitle}</h2>
           <button onClick={() => shiftWeek(1)} className="w-8 h-8 flex items-center justify-center rounded-full hover:bg-gray-100">
             <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round"><path d="M9 18l6-6-6-6"/></svg>
@@ -450,7 +438,6 @@ export function CalendarWeekScreen({ onNav, onAppt }: CalendarWeekProps) {
         </div>
 
         {/* Day columns */}
-        {WEEK_DAYS.map(day => {
         {weekDays.map(day => {
           const dayAppts = allAppts.filter(a => a.date === day.date)
           const isToday  = day.date === (new Date().toISOString().split("T")[0])
@@ -482,7 +469,6 @@ export function CalendarWeekScreen({ onNav, onAppt }: CalendarWeekProps) {
       {/* Mobile: horizontal date tabs + agenda */}
       <div className="md:hidden flex flex-col flex-1 overflow-hidden">
         <div className="flex overflow-x-auto border-b border-gray-100 bg-white flex-shrink-0">
-          {WEEK_DAYS.map(day => {
           {weekDays.map(day => {
             const isActive = activeDayMobile === day.date
             return (

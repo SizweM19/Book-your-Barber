@@ -1,7 +1,5 @@
 'use client'
 
-import React, { useState } from 'react'
-import { useRouter } from 'next/navigation'
 import React, { useState, useEffect, Suspense } from 'react'
 import { useRouter, useSearchParams } from 'next/navigation'
 import {
@@ -15,11 +13,8 @@ import {
   CreateApptScreen,
 } from '@/ops/Appointments'
 
-export default function AppointmentsPage() {
 function AppointmentsContent() {
   const router = useRouter()
-  const [selectedApptRef, setSelectedApptRef] = useState<string | null>(null)
-  const [subView, setSubView] = useState<'list' | 'detail' | 'recordPayment' | 'complete' | 'cancel' | 'noShow' | 'reschedule' | 'create'>('list')
   const searchParams = useSearchParams()
   const refParam = searchParams.get('ref')
   const actionParam = searchParams.get('action')
@@ -73,7 +68,6 @@ function AppointmentsContent() {
   }
 
   if (subView === 'recordPayment') {
-    return <RecordPaymentScreen onBack={() => setSubView('detail')} onDone={() => setSubView('detail')} />
     return (
       <RecordPaymentScreen
         apptRef={selectedApptRef || undefined}
@@ -84,7 +78,6 @@ function AppointmentsContent() {
   }
 
   if (subView === 'complete') {
-    return <CompleteApptScreen onBack={() => setSubView('detail')} onDone={() => setSubView('list')} />
     return (
       <CompleteApptScreen
         apptRef={selectedApptRef || undefined}
@@ -96,7 +89,6 @@ function AppointmentsContent() {
   }
 
   if (subView === 'cancel') {
-    return <CancelApptScreen onBack={() => setSubView('detail')} onDone={() => setSubView('list')} />
     return (
       <CancelApptScreen
         apptRef={selectedApptRef || undefined}
@@ -107,7 +99,6 @@ function AppointmentsContent() {
   }
 
   if (subView === 'noShow') {
-    return <NoShowScreen onBack={() => setSubView('detail')} onDone={() => setSubView('list')} />
     return (
       <NoShowScreen
         apptRef={selectedApptRef || undefined}
@@ -118,7 +109,6 @@ function AppointmentsContent() {
   }
 
   if (subView === 'reschedule') {
-    return <RescheduleScreen onBack={() => setSubView('detail')} onDone={() => setSubView('detail')} />
     return (
       <RescheduleScreen
         apptRef={selectedApptRef || undefined}

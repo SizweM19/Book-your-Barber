@@ -1,15 +1,11 @@
 'use client'
 
-import React, { useState } from 'react'
-import { useRouter } from 'next/navigation'
 import React, { useState, useEffect, Suspense } from 'react'
 import { useRouter, useSearchParams } from 'next/navigation'
 import { CustomerListScreen, CustomerProfileScreen } from '@/ops/Customers'
 
-export default function CustomersPage() {
 function CustomersContent() {
   const router = useRouter()
-  const [selectedCustomerId, setSelectedCustomerId] = useState<string | null>(null)
   const searchParams = useSearchParams()
   const idParam = searchParams.get('id')
   const [selectedCustomerId, setSelectedCustomerId] = useState<string | null>(idParam)
