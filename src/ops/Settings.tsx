@@ -4,9 +4,10 @@ import { DAY_SLOTS } from "./data"
 import {
   fmtR, Card, SectionTitle, OpsDetailRow, PrimaryBtn, SecondaryBtn, DangerBtn, BackBtn, EmptyState,
 } from "./shared"
-import { repositories } from "@/infrastructure/repositories/container"
+import { salonOperationsFacade } from "@/application/facades"
 import { useTenantContext } from "@/application/tenant"
 import { availabilityService } from "@/application/services/AvailabilityService"
+import { repositories } from "@/infrastructure/repositories/container"
 import type { ServiceEntity, StaffEntity } from "@/application/repositories/interfaces"
 
 // ─── SHARED SETTINGS PRIMITIVES ───────────────────────────────────────────────

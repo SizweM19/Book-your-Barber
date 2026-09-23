@@ -78,9 +78,10 @@ export function SectionTitle({ children }: { children: React.ReactNode }) {
   return <h2 className="text-[18px] font-bold text-gray-900 tracking-tight mb-4">{children}</h2>
 }
 
-export function Card({ children, className = "" }: { children: React.ReactNode; className?: string }) {
-  return <div className={`bg-white rounded-2xl border border-gray-100 shadow-sm ${className}`}>{children}</div>
+export function Card({ children, className = "", onClick }: { children: React.ReactNode; className?: string; onClick?: () => void }) {
+  return <div onClick={onClick} className={`bg-white rounded-2xl border border-gray-100 shadow-sm ${className}`}>{children}</div>
 }
+
 
 export function OpsDetailRow({ label, value, mono, accent }: {
   label: string; value: React.ReactNode; mono?: boolean; accent?: string
@@ -93,11 +94,11 @@ export function OpsDetailRow({ label, value, mono, accent }: {
   )
 }
 
-export function StatTile({ label, value, sub, accent }: {
-  label: string; value: string; sub?: string; accent?: string
+export function StatTile({ label, value, sub, accent, onClick }: {
+  label: string; value: string; sub?: string; accent?: string; onClick?: () => void;
 }) {
   return (
-    <Card className="p-4">
+    <Card className={`p-4 ${onClick ? "cursor-pointer hover:border-gray-200 transition-colors" : ""}`} onClick={onClick}>
       <p className="text-[11px] font-bold uppercase tracking-widest text-gray-400 mb-1">{label}</p>
       <p className={`text-[24px] font-black tracking-tight ${accent ?? "text-gray-900"}`}>{value}</p>
       {sub && <p className="text-[12px] text-gray-400 mt-0.5 font-medium">{sub}</p>}
@@ -122,7 +123,7 @@ export function SearchBar({ placeholder, value, onChange }: {
 }
 
 export function PrimaryBtn({ label, onClick, icon, disabled }: {
-  label: string; onClick: () => void; icon?: string; disabled?: boolean
+  label: string; onClick: () => void; icon?: React.ReactNode; disabled?: boolean
 }) {
   return (
     <button onClick={onClick} disabled={disabled}
@@ -168,7 +169,7 @@ export function BackBtn({ onClick }: { onClick: () => void }) {
 }
 
 export function EmptyState({ icon, title, body, cta, onCta }: {
-  icon: string; title: string; body: string; cta?: string; onCta?: () => void
+  icon: React.ReactNode; title: string; body: string; cta?: string; onCta?: () => void
 }) {
   return (
     <div className="flex flex-col items-center justify-center py-20 text-center px-6">
@@ -182,4 +183,17 @@ export function EmptyState({ icon, title, body, cta, onCta }: {
 
 export function SectionDivider({ label }: { label: string }) {
   return <p className="text-[11px] font-black uppercase tracking-widest text-gray-400 px-5 pt-4 pb-1">{label}</p>
+}
+
+export function InlineFeedback({ type, message }: { type: 'loading' | 'error' | 'success' | 'info'; message: string }) {
+  const bg = type === 'error' ? 'bg-red-50 text-red-700 border-red-200' :
+             type === 'success' ? 'bg-emerald-50 text-emerald-700 border-emerald-200' :
+             type === 'loading' ? 'bg-blue-50 text-blue-700 border-blue-200' :
+             'bg-gray-50 text-gray-700 border-gray-200'
+  return (
+    <div className={`p-4 rounded-xl border text-[13px] font-medium flex items-center gap-2 ${bg}`}>
+      {type === 'loading' && <span className="animate-spin inline-block w-4 h-4 border-2 border-current border-t-transparent rounded-full" />}
+      <span>{message}</span>
+    </div>
+  )
 }

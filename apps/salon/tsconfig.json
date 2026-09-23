@@ -1,0 +1,42 @@
+{
+  "extends": "../../tsconfig.base.json",
+  "compilerOptions": {
+    "jsx": "preserve",
+    "plugins": [
+      {
+        "name": "next"
+      }
+    ],
+    "baseUrl": ".",
+    "noImplicitAny": false,
+    "paths": {
+      "@/*": ["./src/*"],
+      "@/index.css": ["./src/index.css"],
+      "@/ops/*": ["./src/features/*"],
+      "@/ops": ["./src/features"],
+      "@/application/facades": ["./src/lib/facades/index"],
+      "@/application/facades/*": ["./src/lib/facades/*"],
+      "@/application/services/*": ["./src/lib/services/*"],
+      "@/application/tenant": ["./src/lib/tenant"],
+      "@/application/tenant/*": ["./src/lib/tenant/*"],
+      "@/application/auth": ["../../packages/auth/src/index"],
+      "@/application/auth/*": ["../../packages/auth/src/*"],
+      "@/domains/*": ["./src/lib/domains/*"],
+      "@/infrastructure/notifications/*": ["./src/lib/notifications/*"],
+      "@/infrastructure/supabase/server": ["./src/lib/supabase/server"],
+      "@/infrastructure/repositories/container": ["../../packages/database/src/repositories/container"],
+      "@/application/repositories/interfaces": ["../../packages/database/src/repositories/interfaces"],
+      "@/infrastructure/supabase/*": ["../../packages/database/src/client/*"]
+    }
+  },
+  "include": [
+    "next-env.d.ts",
+    "**/*.ts",
+    "**/*.tsx",
+    ".next/types/**/*.ts"
+  ],
+  "exclude": [
+    "node_modules",
+    ".next"
+  ]
+}

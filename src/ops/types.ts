@@ -190,3 +190,4 @@ export type OpsView =
   | "addExpense"
   | "editExpense"
   | "financialReports"
+  | "support"

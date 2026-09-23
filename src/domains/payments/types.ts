@@ -1,4 +1,4 @@
-﻿/**
+/**
  * Payment & Refund Domain Types.
  * 
  * Invariants:
@@ -26,7 +26,10 @@ export interface DomainPaymentRecord {
   amount: number
   method: DomainPaymentMethod
   status: 'successful' | 'failed' | 'pending'
+  source?: 'SALON' | 'ONLINE' | string
+  provider?: string
   providerReference?: string
+  idempotencyKey?: string
   recordedAt: string
 }
 
@@ -46,6 +49,8 @@ export interface DomainRefundRecord {
   failureReason?: string
   requestedAt: string
   completedAt?: string
+  providerReference?: string
+  idempotencyKey?: string
 }
 
 export interface PaymentIntentRequest {
@@ -55,6 +60,9 @@ export interface PaymentIntentRequest {
   customerName: string
   customerEmail?: string
   customerPhone?: string
+  cardNumber?: string
+  expiry?: string
+  cvv?: string
 }
 
 export interface PaymentIntentResult {

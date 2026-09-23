@@ -16,6 +16,10 @@ import type {
   SalonSettingsRepository,
   SalonEntity,
   SalonRepository,
+  NotificationLogEntity,
+  NotificationRepository,
+  NotificationTemplateEntity,
+  TemplateRepository,
 } from '@/application/repositories/interfaces'
 import type {
   DomainPaymentRecord,
@@ -211,6 +215,17 @@ export class MockAppointmentRepository implements AppointmentRepository {
     }
     return this.appointments[idx]
   }
+
+  async updatePaymentStatus(id: string, paymentStatus: AppointmentEntity['paymentStatus']) {
+    const idx = this.appointments.findIndex(a => a.id === id)
+    if (idx === -1) throw new Error('Appointment not found')
+    this.appointments[idx] = {
+      ...this.appointments[idx],
+      paymentStatus,
+      updatedAt: new Date().toISOString(),
+    }
+    return this.appointments[idx]
+  }
 }
 
 export class MockPaymentRepository implements PaymentRepository {
@@ -220,8 +235,22 @@ export class MockPaymentRepository implements PaymentRepository {
   ]
 
   async findById(id: string) { return this.payments.find(p => p.id === id) || null }
+  async findByIdempotencyKey(key: string) { return this.payments.find(p => p.idempotencyKey === key) || null }
+  async findByProviderReference(ref: string) { return this.payments.find(p => p.providerReference === ref) || null }
   async listByAppointment(appointmentId: string) { return this.payments.filter(p => p.appointmentId === appointmentId) }
+  async listByTenant(tenantId: string, limit?: number) {
+    const list = this.payments.filter(p => p.tenantId === tenantId)
+    return limit ? list.slice(0, limit) : list
+  }
   async record(data: Omit<DomainPaymentRecord, 'id' | 'recordedAt'>) {
+    if (data.idempotencyKey) {
+      const existing = this.payments.find(p => p.idempotencyKey === data.idempotencyKey)
+      if (existing) return existing
+    }
+    if (data.providerReference) {
+      const existing = this.payments.find(p => p.providerReference === data.providerReference)
+      if (existing) return existing
+    }
     const payment: DomainPaymentRecord = {
       ...data,
       id: generateMockId('p'),
@@ -234,14 +263,20 @@ export class MockPaymentRepository implements PaymentRepository {
 
 export class MockRefundRepository implements RefundRepository {
   private refunds: DomainRefundRecord[] = [
-    { id: 'r1', tenantId: DEFAULT_TENANT_ID, refundReference: 'REF-20260907-001', appointmentId: 'a1', customerId: 'c2', originalAmount: 100, feePercent: 10, feeAmount: 10, refundAmount: 90, status: 'completed', cancelledBy: 'customer', requestedAt: '2026-09-07 14:20', completedAt: '2026-09-10 09:14' },
-    { id: 'r2', tenantId: DEFAULT_TENANT_ID, refundReference: 'REF-20260908-002', appointmentId: 'a3', customerId: 'c3', originalAmount: 250, feePercent: 0, feeAmount: 0, refundAmount: 250, status: 'processing', cancelledBy: 'salon', requestedAt: '2026-09-08 16:05' },
+    { id: 'r1', tenantId: DEFAULT_TENANT_ID, refundReference: 'REF-20260907-001', appointmentId: 'a-hist-1', customerId: 'c2', originalAmount: 100, feePercent: 10, feeAmount: 10, refundAmount: 90, status: 'completed', cancelledBy: 'customer', requestedAt: '2026-09-07 14:20', completedAt: '2026-09-10 09:14' },
+    { id: 'r2', tenantId: DEFAULT_TENANT_ID, refundReference: 'REF-20260908-002', appointmentId: 'a-hist-2', customerId: 'c3', originalAmount: 250, feePercent: 0, feeAmount: 0, refundAmount: 250, status: 'processing', cancelledBy: 'salon', requestedAt: '2026-09-08 16:05' },
   ]
 
   async findById(id: string) { return this.refunds.find(r => r.id === id) || null }
   async findByReference(ref: string) { return this.refunds.find(r => r.refundReference === ref) || null }
+  async findByIdempotencyKey(key: string) { return this.refunds.find(r => r.idempotencyKey === key) || null }
   async listByTenant(tenantId: string) { return this.refunds.filter(r => r.tenantId === tenantId) }
+  async listByAppointment(appointmentId: string) { return this.refunds.filter(r => r.appointmentId === appointmentId) }
   async create(data: Omit<DomainRefundRecord, 'id' | 'requestedAt'>) {
+    if (data.idempotencyKey) {
+      const existing = this.refunds.find(r => r.idempotencyKey === data.idempotencyKey)
+      if (existing) return existing
+    }
     const refund: DomainRefundRecord = {
       ...data,
       id: generateMockId('r'),
@@ -555,5 +590,129 @@ export class MockSalonRepository implements SalonRepository {
 
   async list(): Promise<SalonEntity[]> {
     return this.salons.filter(s => s.active)
+  }
+}
+
+export class MockNotificationRepository implements NotificationRepository {
+  private logs: NotificationLogEntity[] = []
+
+  async findById(id: string): Promise<NotificationLogEntity | null> {
+    return this.logs.find(l => l.id === id) || null
+  }
+
+  async findByIdempotencyKey(key: string): Promise<NotificationLogEntity | null> {
+    return this.logs.find(l => l.idempotencyKey === key) || null
+  }
+
+  async listByAppointment(appointmentId: string): Promise<NotificationLogEntity[]> {
+    return this.logs.filter(l => l.appointmentId === appointmentId)
+  }
+
+  async listByTenant(tenantId: string, limit = 100): Promise<NotificationLogEntity[]> {
+    return this.logs.filter(l => l.tenantId === tenantId).slice(0, limit)
+  }
+
+  async listPendingRetries(limit = 50): Promise<NotificationLogEntity[]> {
+    const now = new Date().toISOString()
+    return this.logs
+      .filter(
+        l =>
+          (l.status === 'pending' || (l.status === 'failed' && l.retryCount < l.maxRetries)) &&
+          (!l.nextRetryAt || l.nextRetryAt <= now)
+      )
+      .slice(0, limit)
+  }
+
+  async create(
+    data: Omit<NotificationLogEntity, 'id' | 'createdAt' | 'updatedAt'>
+  ): Promise<NotificationLogEntity> {
+    const entry: NotificationLogEntity = {
+      ...data,
+      id: generateMockId('notif'),
+      createdAt: new Date().toISOString(),
+      updatedAt: new Date().toISOString(),
+    }
+    this.logs.unshift(entry)
+    return entry
+  }
+
+  async updateStatus(
+    id: string,
+    params: {
+      status: NotificationLogEntity['status']
+      providerMessageId?: string
+      sentAt?: string
+      deliveredAt?: string
+      failReason?: string
+      retryCount?: number
+      nextRetryAt?: string
+    }
+  ): Promise<NotificationLogEntity> {
+    const idx = this.logs.findIndex(l => l.id === id)
+    if (idx === -1) {
+      throw new Error(`Notification log with id ${id} not found.`)
+    }
+
+    const current = this.logs[idx]
+    const updated: NotificationLogEntity = {
+      ...current,
+      status: params.status,
+      providerMessageId: params.providerMessageId !== undefined ? params.providerMessageId : current.providerMessageId,
+      sentAt: params.sentAt !== undefined ? params.sentAt : current.sentAt,
+      deliveredAt: params.deliveredAt !== undefined ? params.deliveredAt : current.deliveredAt,
+      failReason: params.failReason !== undefined ? params.failReason : current.failReason,
+      retryCount: params.retryCount !== undefined ? params.retryCount : current.retryCount,
+      nextRetryAt: params.nextRetryAt !== undefined ? params.nextRetryAt : current.nextRetryAt,
+      updatedAt: new Date().toISOString(),
+    }
+    this.logs[idx] = updated
+    return updated
+  }
+}
+
+export class MockTemplateRepository implements TemplateRepository {
+  private templates: NotificationTemplateEntity[] = []
+
+  async findByTypeAndChannel(
+    tenantId: string,
+    templateType: string,
+    channel: 'whatsapp' | 'sms' | 'email'
+  ): Promise<NotificationTemplateEntity | null> {
+    return (
+      this.templates.find(
+        t => t.tenantId === tenantId && t.templateType === templateType && t.channel === channel && t.active
+      ) || null
+    )
+  }
+
+  async listByTenant(tenantId: string): Promise<NotificationTemplateEntity[]> {
+    return this.templates.filter(t => t.tenantId === tenantId)
+  }
+
+  async upsert(
+    data: Omit<NotificationTemplateEntity, 'id' | 'createdAt' | 'updatedAt'>
+  ): Promise<NotificationTemplateEntity> {
+    const existingIdx = this.templates.findIndex(
+      t => t.tenantId === data.tenantId && t.templateType === data.templateType && t.channel === data.channel
+    )
+
+    if (existingIdx >= 0) {
+      const updated: NotificationTemplateEntity = {
+        ...this.templates[existingIdx],
+        ...data,
+        updatedAt: new Date().toISOString(),
+      }
+      this.templates[existingIdx] = updated
+      return updated
+    }
+
+    const created: NotificationTemplateEntity = {
+      ...data,
+      id: generateMockId('tmpl'),
+      createdAt: new Date().toISOString(),
+      updatedAt: new Date().toISOString(),
+    }
+    this.templates.push(created)
+    return created
   }
 }

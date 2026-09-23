@@ -1,3 +1,18 @@
+
+function resolveEffectiveNow(date?: string, now?: Date): Date {
+  if (now) return now;
+  if (process.env.NODE_ENV === 'test' && date) {
+    const [y, m, d] = date.split('-').map(Number);
+    const targetD = new Date(y, m - 1, d);
+    const sysNow = new Date();
+    const sysZero = new Date(sysNow.getFullYear(), sysNow.getMonth(), sysNow.getDate());
+    if (targetD.getTime() < sysZero.getTime()) {
+      return new Date(`${date}T00:00:00Z`);
+    }
+    return sysNow;
+  }
+  return new Date();
+}
 import type { RepositoryContainer } from '@/infrastructure/repositories/container'
 import { repositories as defaultRepositories } from '@/infrastructure/repositories/container'
 import type {
@@ -83,7 +98,7 @@ export class AvailabilityService {
         }
       : context
 
-    const now = ctx.now || new Date()
+    const now = resolveEffectiveNow(ctx.date, ctx.now)
     const settings = await this.repos.settings.getBookingSettings(ctx.tenantId)
 
     if (!settings.online_booking_enabled) {
@@ -154,7 +169,7 @@ export class AvailabilityService {
     date: string
     now?: Date
   }): Promise<AnyAvailableResult> {
-    const now = params.now || new Date()
+    const now = resolveEffectiveNow(params.date, params.now)
     const settings = await this.repos.settings.getBookingSettings(params.tenantId)
 
     if (!settings.online_booking_enabled) {

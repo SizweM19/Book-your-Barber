@@ -1,0 +1,17 @@
+{
+  "name": "@byb/types",
+  "version": "1.0.0",
+  "private": true,
+  "type": "module",
+  "main": "./src/index.ts",
+  "types": "./src/index.ts",
+  "exports": {
+    ".": "./src/index.ts",
+    "./appointments": "./src/appointments.ts",
+    "./payments": "./src/payments.ts",
+    "./tenants": "./src/tenants.ts"
+  },
+  "devDependencies": {
+    "typescript": "^5.7.0"
+  }
+}

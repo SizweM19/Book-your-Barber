@@ -10,6 +10,8 @@ import type {
   ScheduleRepository,
   SalonSettingsRepository,
   SalonRepository,
+  NotificationRepository,
+  TemplateRepository,
 } from '@/application/repositories/interfaces'
 import {
   MockCustomerRepository,
@@ -23,6 +25,8 @@ import {
   MockScheduleRepository,
   MockSalonSettingsRepository,
   MockSalonRepository,
+  MockNotificationRepository,
+  MockTemplateRepository,
 } from './MockRepositories'
 import {
   SupabaseCustomerRepository,
@@ -36,6 +40,8 @@ import {
   SupabaseScheduleRepository,
   SupabaseSalonSettingsRepository,
   SupabaseSalonRepository,
+  SupabaseNotificationRepository,
+  SupabaseTemplateRepository,
 } from './SupabaseRepositories'
 import { isSupabaseConfigured } from '@/infrastructure/supabase/client'
 
@@ -51,22 +57,36 @@ export interface RepositoryContainer {
   staffServices: StaffServiceRepository
   schedules: ScheduleRepository
   settings: SalonSettingsRepository
+  notifications: NotificationRepository
+  templates: TemplateRepository
+}
+
+export function createMockContainer(): RepositoryContainer {
+  return {
+    salons: new MockSalonRepository(),
+    customers: new MockCustomerRepository(),
+    services: new MockServiceRepository(),
+    staff: new MockStaffRepository(),
+    appointments: new MockAppointmentRepository(),
+    payments: new MockPaymentRepository(),
+    refunds: new MockRefundRepository(),
+    expenses: new MockExpenseRepository(),
+    staffServices: new MockStaffServiceRepository(),
+    schedules: new MockScheduleRepository(),
+    settings: new MockSalonSettingsRepository(),
+    notifications: new MockNotificationRepository(),
+    templates: new MockTemplateRepository(),
+  }
 }
 
 // Singleton instances for Mock Data Mode
-const mockContainer: RepositoryContainer = {
-  salons: new MockSalonRepository(),
-  customers: new MockCustomerRepository(),
-  services: new MockServiceRepository(),
-  staff: new MockStaffRepository(),
-  appointments: new MockAppointmentRepository(),
-  payments: new MockPaymentRepository(),
-  refunds: new MockRefundRepository(),
-  expenses: new MockExpenseRepository(),
-  staffServices: new MockStaffServiceRepository(),
-  schedules: new MockScheduleRepository(),
-  settings: new MockSalonSettingsRepository(),
+let mockContainer: RepositoryContainer = createMockContainer()
+
+export function resetMockContainer(): RepositoryContainer {
+  mockContainer = createMockContainer()
+  return mockContainer
 }
+
 
 export function createSupabaseContainer(client?: any): RepositoryContainer {
   return {
@@ -81,6 +101,8 @@ export function createSupabaseContainer(client?: any): RepositoryContainer {
     staffServices: new SupabaseStaffServiceRepository(client),
     schedules: new SupabaseScheduleRepository(client),
     settings: new SupabaseSalonSettingsRepository(client),
+    notifications: new SupabaseNotificationRepository(client),
+    templates: new SupabaseTemplateRepository(client),
   }
 }
 
@@ -89,19 +111,6 @@ let supabaseContainer: RepositoryContainer | null = null
 
 function getSupabaseContainer(): RepositoryContainer {
   if (!supabaseContainer) {
-    supabaseContainer = {
-      salons: new SupabaseSalonRepository(),
-      customers: new SupabaseCustomerRepository(),
-      services: new SupabaseServiceRepository(),
-      staff: new SupabaseStaffRepository(),
-      appointments: new SupabaseAppointmentRepository(),
-      payments: new SupabasePaymentRepository(),
-      refunds: new SupabaseRefundRepository(),
-      expenses: new SupabaseExpenseRepository(),
-      staffServices: new SupabaseStaffServiceRepository(),
-      schedules: new SupabaseScheduleRepository(),
-      settings: new SupabaseSalonSettingsRepository(),
-    }
     supabaseContainer = createSupabaseContainer()
   }
   return supabaseContainer

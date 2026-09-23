@@ -147,6 +147,7 @@ export interface AppointmentRepository {
   create(data: Omit<AppointmentEntity, 'id' | 'createdAt' | 'updatedAt' | 'reminderChannel'> & { reminderChannel?: 'whatsapp' | 'sms' | 'email' | 'none' }): Promise<AppointmentEntity>
   updateStatus(id: string, status: AppointmentEntity['status']): Promise<AppointmentEntity>
   updateDateTime(id: string, date: string, time: string): Promise<AppointmentEntity>
+  updatePaymentStatus(id: string, paymentStatus: AppointmentEntity['paymentStatus']): Promise<AppointmentEntity>
   recordPayment(id: string, amount: number, paymentStatus: AppointmentEntity['paymentStatus']): Promise<AppointmentEntity>
   lookupGuest?(reference: string, verificationContact: string): Promise<AppointmentEntity | null>
 }
@@ -177,14 +178,19 @@ export interface SalonSettingsRepository {
 
 export interface PaymentRepository {
   findById(id: string): Promise<DomainPaymentRecord | null>
+  findByIdempotencyKey(key: string): Promise<DomainPaymentRecord | null>
+  findByProviderReference(ref: string): Promise<DomainPaymentRecord | null>
   listByAppointment(appointmentId: string): Promise<DomainPaymentRecord[]>
+  listByTenant(tenantId: string, limit?: number): Promise<DomainPaymentRecord[]>
   record(data: Omit<DomainPaymentRecord, 'id' | 'recordedAt'>): Promise<DomainPaymentRecord>
 }
 
 export interface RefundRepository {
   findById(id: string): Promise<DomainRefundRecord | null>
   findByReference(refundReference: string): Promise<DomainRefundRecord | null>
+  findByIdempotencyKey(key: string): Promise<DomainRefundRecord | null>
   listByTenant(tenantId: string): Promise<DomainRefundRecord[]>
+  listByAppointment(appointmentId: string): Promise<DomainRefundRecord[]>
   create(data: Omit<DomainRefundRecord, 'id' | 'requestedAt'>): Promise<DomainRefundRecord>
   updateStatus(id: string, status: DomainRefundStatus, failureReason?: string): Promise<DomainRefundRecord>
 }
@@ -195,4 +201,75 @@ export interface ExpenseRepository {
   create(data: Omit<ExpenseEntity, 'id' | 'createdAt' | 'updatedAt'>): Promise<ExpenseEntity>
   update(id: string, data: Partial<ExpenseEntity>): Promise<ExpenseEntity>
   delete(id: string): Promise<boolean>
+}
+
+export interface NotificationLogEntity {
+  id: string
+  tenantId: string
+  appointmentId?: string
+  customerId?: string
+  eventType: string
+  channel: 'whatsapp' | 'sms' | 'email' | 'none'
+  recipient: string
+  subject?: string
+  content: string
+  status: 'pending' | 'sending' | 'sent' | 'delivered' | 'failed' | 'notRequired'
+  providerName: string
+  providerMessageId?: string
+  idempotencyKey?: string
+  retryCount: number
+  maxRetries: number
+  nextRetryAt?: string
+  sentAt?: string
+  deliveredAt?: string
+  failReason?: string
+  metadata?: Record<string, unknown>
+  createdAt: string
+  updatedAt: string
+}
+
+export interface NotificationTemplateEntity {
+  id: string
+  tenantId: string
+  templateType: string
+  channel: 'whatsapp' | 'sms' | 'email'
+  subject?: string
+  content: string
+  whatsappTemplateName?: string
+  active: boolean
+  createdAt: string
+  updatedAt?: string
+}
+
+export interface NotificationRepository {
+  findById(id: string): Promise<NotificationLogEntity | null>
+  findByIdempotencyKey(key: string): Promise<NotificationLogEntity | null>
+  listByAppointment(appointmentId: string): Promise<NotificationLogEntity[]>
+  listByTenant(tenantId: string, limit?: number): Promise<NotificationLogEntity[]>
+  listPendingRetries(limit?: number): Promise<NotificationLogEntity[]>
+  create(data: Omit<NotificationLogEntity, 'id' | 'createdAt' | 'updatedAt'>): Promise<NotificationLogEntity>
+  updateStatus(
+    id: string,
+    params: {
+      status: NotificationLogEntity['status']
+      providerMessageId?: string
+      sentAt?: string
+      deliveredAt?: string
+      failReason?: string
+      retryCount?: number
+      nextRetryAt?: string
+    }
+  ): Promise<NotificationLogEntity>
+}
+
+export interface TemplateRepository {
+  findByTypeAndChannel(
+    tenantId: string,
+    templateType: string,
+    channel: 'whatsapp' | 'sms' | 'email'
+  ): Promise<NotificationTemplateEntity | null>
+  listByTenant(tenantId: string): Promise<NotificationTemplateEntity[]>
+  upsert(
+    data: Omit<NotificationTemplateEntity, 'id' | 'createdAt' | 'updatedAt'>
+  ): Promise<NotificationTemplateEntity>
 }

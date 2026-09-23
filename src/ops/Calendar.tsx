@@ -2,8 +2,9 @@ import React, { useState, useEffect, useRef } from "react"
 import type { OpsView } from "./types"
 import { DAY_SLOTS } from "./data"
 import { ApptBadge, PayBadge, PrimaryBtn, EmptyState } from "./shared"
-import { repositories } from "@/infrastructure/repositories/container"
+import { salonOperationsFacade } from "@/application/facades"
 import { useTenantContext } from "@/application/tenant"
+import { repositories } from "@/infrastructure/repositories/container"
 
 // Pixel height per 30-minute slot in the staff-column grid
 const SLOT_HEIGHT = 56

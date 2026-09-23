@@ -1,185 +1,270 @@
-import React from "react"
+import React, { useState, useEffect } from "react"
 import type { OpsView } from "./types"
-import { OPS_APPOINTMENTS, OPS_STAFF, TODAY, TODAY_LABEL, OPS_SALON_NAME } from "./data"
-import { fmtR, StatTile, Card, SectionTitle, ApptBadge, PayBadge, PrimaryBtn, EmptyState } from "./shared"
+import {
+  fmtR, StatTile, Card, SectionTitle, ApptBadge, PayBadge,
+  PrimaryBtn, SecondaryBtn, EmptyState, InlineFeedback,
+} from "./shared"
+import { salonOperationsFacade } from "@/application/facades/SalonOperationsFacade"
+import { useTenantContext } from "@/application/tenant"
+import type { AppointmentEntity, StaffEntity } from "@/application/repositories/interfaces"
 
 interface Props {
   onNav: (v: OpsView) => void
-  onAppt: (ref: string) => void
+  onAppt: (refId: string) => void
 }
 
 export function DashboardScreen({ onNav, onAppt }: Props) {
-  const todayAppts  = OPS_APPOINTMENTS.filter(a => a.date === TODAY)
-  const totalCharged = todayAppts.reduce((s, a) => s + a.charged, 0)
-  const totalPaid    = todayAppts.reduce((s, a) => s + a.paid,    0)
+  const { tenantId, tenant } = useTenantContext()
+  const [todayAppts, setTodayAppts] = useState<AppointmentEntity[]>([])
+  const [activeStaff, setActiveStaff] = useState<StaffEntity[]>([])
+  const [loading, setLoading] = useState(true)
+  const [error, setError] = useState(false)
+
+  const loadData = () => {
+    if (!tenantId) {
+      setLoading(false)
+      return
+    }
+    let mounted = true
+    setLoading(true)
+    setError(false)
+    const today = new Date().toISOString().slice(0, 10)
+
+    salonOperationsFacade.getDashboardData(tenantId, today)
+      .then(data => {
+        if (mounted) {
+          setTodayAppts(data.todayAppts)
+          setActiveStaff(data.activeStaff)
+          setLoading(false)
+        }
+      })
+      .catch(err => {
+        console.error("Failed to load dashboard data:", err)
+        if (mounted) {
+          setLoading(false)
+          setError(true)
+        }
+      })
+    return () => { mounted = false }
+  }
+
+  useEffect(() => {
+    const cleanup = loadData()
+    return cleanup
+  }, [tenantId])
+
+  if (loading) {
+    return (
+      <div className="p-8 flex justify-center">
+        <InlineFeedback type="loading" message="Loading dashboard..." />
+      </div>
+    )
+  }
+
+  if (error) {
+    return (
+      <div className="p-8 flex flex-col items-center gap-3">
+        <InlineFeedback type="error" message="Failed to load dashboard." />
+        <SecondaryBtn label="Retry" onClick={loadData} />
+      </div>
+    )
+  }
+
+  const totalCharged = todayAppts.reduce((s, a) => s + (a.totalCharged || 0), 0)
+  const totalPaid    = todayAppts.reduce((s, a) => s + (a.totalPaid || 0), 0)
   const outstanding  = totalCharged - totalPaid
 
-  // Appointment with a failed notification
-  const failedNotif = OPS_APPOINTMENTS.find(a =>
-    a.notifications.some(n => n.status === "failed")
-  )
+  const unpaidAppts = todayAppts.filter(a => a.paymentStatus === "unpaid" || a.paymentStatus === "partial")
 
   const alerts = [
-    {
-      emoji:"💰",
-      label:`${todayAppts.filter(a => a.paymentStatus === "unpaid" || a.paymentStatus === "partial").length} outstanding payments`,
-      action:"View payments",
-      nav:"appointmentList" as OpsView,
-      color:"text-amber-700",
-    },
-    {
-      emoji:"👤",
-      label:"5 customers at risk",
-      action:"View customers",
-      nav:"customerList" as OpsView,
-      color:"text-amber-700",
-    },
-    {
-      emoji:"📵",
-      label:"1 notification failed",
-      action:"View notification",
-      nav:"appointmentDetail" as OpsView,
-      ref: failedNotif?.ref,
-      color:"text-gray-700",
-    },
-    {
-      emoji:"⚠️",
-      label:"1 booking conflict",
-      action:"Resolve conflict",
-      nav:"calendarDay" as OpsView,
-      color:"text-red-600",
-    },
+    ...(unpaidAppts.length > 0 ? [{
+      icon: (
+        <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+          <line x1="12" y1="1" x2="12" y2="23" />
+          <path d="M17 5H9.5a3.5 3.5 0 0 0 0 7h5a3.5 3.5 0 0 1 0 7H6" />
+        </svg>
+      ),
+      label: `${unpaidAppts.length} outstanding payment${unpaidAppts.length > 1 ? 's' : ''}`,
+      action: "View payments",
+      nav: "appointmentList" as OpsView,
+    }] : [])
   ]
 
   const isEmpty = todayAppts.length === 0
+  const dateFormatted = new Date().toLocaleDateString('en-ZA', { weekday: 'long', year: 'numeric', month: 'long', day: 'numeric' })
 
   return (
-    <div className="p-6 max-w-5xl mx-auto space-y-6">
-      {/* Header */}
-      <div className="flex items-start justify-between flex-wrap gap-4">
-        <div>
-          <h1 className="text-[26px] font-black text-gray-900 tracking-tight">Good morning, Sanele 👋</h1>
-          <p className="text-[14px] text-gray-500 mt-0.5">{TODAY_LABEL} · {OPS_SALON_NAME}</p>
+    <div className="p-4 max-w-5xl mx-auto space-y-4">
+      {/* 1. Header */}
+      <div className="flex items-center justify-between gap-3 pb-3 border-b border-gray-200">
+        <div className="min-w-0 flex-1">
+          <h1 className="text-[17px] sm:text-[19px] font-bold text-gray-900 tracking-tight">Overview</h1>
+          <p className="text-[11px] sm:text-[12px] text-gray-500 mt-0.5 truncate">{dateFormatted} · {tenant?.name || 'Salon'}</p>
         </div>
-        <PrimaryBtn label="New appointment" onClick={() => onNav("createAppt")} icon="+" />
+        <div className="flex items-center gap-2 flex-shrink-0">
+          <PrimaryBtn
+            label="New appointment"
+            onClick={() => onNav("createAppt")}
+            icon={
+              <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5">
+                <line x1="12" y1="5" x2="12" y2="19" />
+                <line x1="5" y1="12" x2="19" y2="12" />
+              </svg>
+            }
+          />
+          <div className="hidden sm:flex items-center gap-2">
+            <SecondaryBtn label="Appointments" onClick={() => onNav("appointmentList")} />
+            <SecondaryBtn label="Calendar" onClick={() => onNav("calendarDay")} />
+          </div>
+        </div>
       </div>
 
-      {/* Stats */}
-      <div className="grid grid-cols-2 lg:grid-cols-4 gap-3">
-        <StatTile label="Appointments" value={String(todayAppts.length)} sub="today" />
+      {/* 2. Key Metrics */}
+      <div className="grid grid-cols-2 lg:grid-cols-4 gap-2.5">
+        <StatTile label="Appointments" value={String(todayAppts.length)} sub="today" onClick={() => onNav("appointmentList")} />
         <StatTile label="Charged"      value={fmtR(totalCharged)} sub="today" />
-        <StatTile label="Paid"         value={fmtR(totalPaid)}    sub="today" accent="text-emerald-600" />
+        <StatTile label="Paid"         value={fmtR(totalPaid)}    sub="today" />
         <StatTile label="Outstanding"  value={fmtR(outstanding)}  sub="today" accent={outstanding > 0 ? "text-amber-600" : "text-gray-900"} />
       </div>
 
-      {/* Quick actions */}
-      <div className="flex gap-3 flex-wrap">
-        <button onClick={() => onNav("createAppt")}   className="flex items-center gap-2 px-4 py-2.5 bg-gray-900 text-white rounded-xl text-[13px] font-semibold hover:bg-gray-800 transition-colors shadow-sm">+ New appointment</button>
-        <button onClick={() => onNav("calendarDay")}  className="flex items-center gap-2 px-4 py-2.5 border-2 border-gray-200 text-gray-700 rounded-xl text-[13px] font-semibold hover:border-gray-400 transition-colors">📅 View calendar</button>
-        <button onClick={() => onNav("customerList")} className="flex items-center gap-2 px-4 py-2.5 border-2 border-gray-200 text-gray-700 rounded-xl text-[13px] font-semibold hover:border-gray-400 transition-colors">+ Add customer</button>
-        <button onClick={() => onNav("serviceList")}  className="flex items-center gap-2 px-4 py-2.5 border-2 border-gray-200 text-gray-700 rounded-xl text-[13px] font-semibold hover:border-gray-400 transition-colors">+ Add service</button>
-      </div>
-
-      <div className="grid lg:grid-cols-3 gap-5">
-        {/* Today's appointments */}
-        <div className="lg:col-span-2 space-y-3">
+      {/* 3. Main Operational Sections */}
+      <div className="grid lg:grid-cols-3 gap-4">
+        {/* Left Column: Today's Appointments */}
+        <div className="lg:col-span-2 space-y-2.5">
           <SectionTitle>Today's appointments</SectionTitle>
           <Card>
             {isEmpty ? (
               <EmptyState
-                icon="📅"
+                icon={
+                  <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round">
+                    <rect x="3" y="4" width="18" height="18" rx="2" ry="2" />
+                    <line x1="16" y1="2" x2="16" y2="6" />
+                    <line x1="8" y1="2" x2="8" y2="6" />
+                    <line x1="3" y1="10" x2="21" y2="10" />
+                  </svg>
+                }
                 title="No appointments today"
-                body="Your schedule is clear."
+                body="Your schedule is clear for today."
                 cta="Create appointment"
                 onCta={() => onNav("createAppt")}
               />
             ) : (
-              <div className="divide-y divide-gray-50">
+              <div className="divide-y divide-gray-100">
                 {todayAppts.map(a => (
-                  <button
-                    key={a.ref}
-                    onClick={() => onAppt(a.ref)}
-                    className="w-full flex items-center gap-4 px-5 py-4 hover:bg-gray-50 transition-colors text-left"
+                  <div
+                    key={a.id}
+                    onClick={() => onAppt(a.bookingReference)}
+                    className="w-full flex items-center gap-2.5 sm:gap-3 px-3 sm:px-3.5 py-2.5 hover:bg-gray-50 transition-colors text-left cursor-pointer"
                   >
-                    <div className="text-[13px] font-mono font-bold text-gray-400 w-12 flex-shrink-0">{a.time}</div>
-                    <div className="flex-1 min-w-0">
-                      <p className="font-semibold text-[14px] text-gray-900">{a.customer}</p>
-                      <p className="text-[12px] text-gray-500 mt-0.5">
-                        {a.service} · {a.staff.split(" ")[0]}
-                        {a.paymentMethod === "payAtShop" && (
-                          <span className="ml-2 text-amber-600 font-semibold">· Pay at shop</span>
-                        )}
+                    <div className="text-[12px] font-mono font-medium text-gray-500 w-11 sm:w-12 flex-shrink-0">
+                      {a.startTime.slice(0, 5)}
+                    </div>
+                    <div className="flex-1 min-w-0 pr-1">
+                      <p className="font-semibold text-[13px] text-gray-900 truncate">
+                        Ref #{a.bookingReference.split('-').pop()}
+                      </p>
+                      <p className="text-[11px] text-gray-500 mt-0.5 truncate">
+                        {activeStaff.find(s => s.id === a.staffId)?.name || 'Unassigned'}
                       </p>
                     </div>
-                    <div className="flex items-center gap-2 flex-shrink-0">
-                      <PayBadge  status={a.paymentStatus} />
+                    <div className="flex flex-col sm:flex-row items-end sm:items-center gap-1 sm:gap-2 flex-shrink-0">
+                      <PayBadge status={a.paymentStatus} />
                       <ApptBadge status={a.status} />
                     </div>
-                    <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="#9CA3AF" strokeWidth="2.5" strokeLinecap="round" className="flex-shrink-0">
+                    <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="#9CA3AF" strokeWidth="2.5" strokeLinecap="round" className="flex-shrink-0 ml-0.5">
                       <path d="M9 18l6-6-6-6"/>
                     </svg>
-                  </button>
+                  </div>
                 ))}
               </div>
             )}
           </Card>
-          {isEmpty && (
-            <div className="flex gap-3">
-              <button onClick={() => onNav("createAppt")} className="flex-1 py-3.5 bg-gray-900 text-white rounded-xl font-semibold text-[13px] hover:bg-gray-800 transition-colors shadow-sm">Create appointment</button>
-              <button className="flex-1 py-3.5 border-2 border-gray-200 text-gray-700 rounded-xl font-semibold text-[13px] hover:border-gray-400 transition-colors">Share booking link</button>
-            </div>
-          )}
         </div>
 
-        {/* Right column */}
-        <div className="space-y-5">
-          {/* Attention required */}
+        {/* Right Column: Attention, Quick Actions, Staff Active */}
+        <div className="space-y-4">
+          {alerts.length > 0 && (
+            <div>
+              <SectionTitle>Attention required</SectionTitle>
+              <Card>
+                <div className="divide-y divide-gray-100">
+                  {alerts.map(a => (
+                    <button
+                      key={a.label}
+                      onClick={() => onNav(a.nav)}
+                      className="w-full flex items-center gap-2.5 px-3 py-2.5 hover:bg-gray-50 transition-colors text-left"
+                    >
+                      <span className="text-gray-400 flex-shrink-0">{a.icon}</span>
+                      <div className="flex-1 min-w-0">
+                        <p className="text-[12px] font-semibold text-gray-900">{a.label}</p>
+                        <p className="text-[11px] text-gray-500 underline underline-offset-2">{a.action}</p>
+                      </div>
+                    </button>
+                  ))}
+                </div>
+              </Card>
+            </div>
+          )}
+
           <div>
-            <SectionTitle>Attention required</SectionTitle>
-            <Card>
-              <div className="divide-y divide-gray-50">
-                {alerts.map(a => (
-                  <button
-                    key={a.label}
-                    onClick={() => {
-                      if (a.ref) onAppt(a.ref)
-                      else onNav(a.nav)
-                    }}
-                    className="w-full flex items-center gap-3 px-4 py-3.5 hover:bg-gray-50 transition-colors text-left"
-                  >
-                    <span className="text-base flex-shrink-0">{a.emoji}</span>
-                    <div className="flex-1 min-w-0">
-                      <p className={`text-[13px] font-semibold ${a.color}`}>{a.label}</p>
-                      <p className="text-[11px] text-gray-400 underline underline-offset-2">{a.action}</p>
-                    </div>
-                    <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="#9CA3AF" strokeWidth="2.5" strokeLinecap="round" className="flex-shrink-0">
-                      <path d="M9 18l6-6-6-6"/>
-                    </svg>
-                  </button>
-                ))}
-              </div>
-            </Card>
+            <SectionTitle>Quick actions</SectionTitle>
+            <div className="grid grid-cols-2 gap-2">
+              <button
+                onClick={() => onNav("createAppt")}
+                className="flex flex-col items-start p-2.5 border border-gray-200 rounded-sm hover:border-gray-900 bg-white transition-colors text-left"
+              >
+                <span className="text-[12px] font-semibold text-gray-900">New booking</span>
+                <span className="text-[10px] text-gray-400 mt-0.5">Create appointment</span>
+              </button>
+              <button
+                onClick={() => onNav("appointmentList")}
+                className="flex flex-col items-start p-2.5 border border-gray-200 rounded-sm hover:border-gray-900 bg-white transition-colors text-left"
+              >
+                <span className="text-[12px] font-semibold text-gray-900">Appointments</span>
+                <span className="text-[10px] text-gray-400 mt-0.5">View bookings</span>
+              </button>
+              <button
+                onClick={() => onNav("calendarDay")}
+                className="flex flex-col items-start p-2.5 border border-gray-200 rounded-sm hover:border-gray-900 bg-white transition-colors text-left"
+              >
+                <span className="text-[12px] font-semibold text-gray-900">Calendar</span>
+                <span className="text-[10px] text-gray-400 mt-0.5">Daily & weekly grid</span>
+              </button>
+              <button
+                onClick={() => onNav("customerList")}
+                className="flex flex-col items-start p-2.5 border border-gray-200 rounded-sm hover:border-gray-900 bg-white transition-colors text-left"
+              >
+                <span className="text-[12px] font-semibold text-gray-900">Search clients</span>
+                <span className="text-[10px] text-gray-400 mt-0.5">Client CRM list</span>
+              </button>
+            </div>
           </div>
 
-          {/* Staff performance */}
           <div>
-            <SectionTitle>Staff today</SectionTitle>
+            <SectionTitle>Staff active today</SectionTitle>
             <Card>
-              <div className="divide-y divide-gray-50">
-                {OPS_STAFF.filter(s => s.active).map(s => (
-                  <div key={s.id} className="flex items-center gap-3 px-4 py-3.5">
-                    <img
-                      src={`https://images.unsplash.com/${s.photo}?w=64&h=64&fit=crop&crop=face&auto=format`}
-                      alt={s.name}
-                      className="w-9 h-9 rounded-full object-cover bg-gray-100 flex-shrink-0"
-                    />
-                    <div className="flex-1 min-w-0">
-                      <p className="text-[13px] font-semibold text-gray-900 truncate">{s.name.split(" ")[0]}</p>
-                      <p className="text-[11px] text-gray-400">{s.role}</p>
-                    </div>
-                    <p className="text-[14px] font-bold text-gray-900">{fmtR(s.todayRevenue)}</p>
-                  </div>
-                ))}
+              <div className="divide-y divide-gray-100">
+                {activeStaff.length === 0 ? (
+                  <div className="p-3 text-center text-[12px] text-gray-400">No staff active</div>
+                ) : (
+                  activeStaff.map(s => {
+                    const sAppts = todayAppts.filter(a => a.staffId === s.id && a.status !== 'cancelled' && a.status !== 'noShow')
+                    const sRev = sAppts.reduce((sum, a) => sum + (a.totalPaid || a.totalCharged || 0), 0)
+
+                    return (
+                      <div key={s.id} className="flex items-center gap-2.5 px-3 py-2">
+                        <div className="w-6 h-6 rounded border border-gray-200 bg-gray-50 flex items-center justify-center flex-shrink-0 text-[10px] font-semibold text-gray-600">
+                          {s.name.charAt(0)}
+                        </div>
+                        <div className="flex-1 min-w-0">
+                          <p className="text-[12px] font-semibold text-gray-900 truncate">{s.name}</p>
+                          <p className="text-[10px] text-gray-500">{s.role}</p>
+                        </div>
+                        <p className="text-[12px] font-semibold text-gray-900">{fmtR(sRev)}</p>
+                      </div>
+                    )
+                  })
+                )}
               </div>
             </Card>
           </div>
