@@ -159,7 +159,7 @@ export type AppAppointmentStatus =
   | 'cancelled'
   | 'noShow'
 
-export type AppPaymentStatus = 'unpaid' | 'deposit_paid' | 'paid' | 'refunded' | 'partial' | 'refundProcessing'
+export type AppPaymentStatus = 'unpaid' | 'deposit_paid' | 'paid' | 'refunded' | 'partial' | 'refundProcessing' | 'paymentFailed'
 
 export interface AppointmentEntity {
   id: string

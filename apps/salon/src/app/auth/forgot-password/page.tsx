@@ -2,7 +2,7 @@
 
 import React, { useState } from 'react'
 import Link from 'next/link'
-import { authService } from '@/application/auth'
+import { authService } from '@byb/auth'
 
 export default function ForgotPasswordPage() {
   const [email, setEmail] = useState('')

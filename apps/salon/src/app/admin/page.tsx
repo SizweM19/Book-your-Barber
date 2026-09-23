@@ -2,7 +2,7 @@
 
 import React from 'react'
 import Link from 'next/link'
-import { useAuth } from '@/application/auth'
+import { useAuth } from '@byb/auth'
 
 export default function PlatformAdminPage() {
   const { user, isPlatformAdmin } = useAuth()

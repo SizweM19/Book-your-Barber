@@ -5,6 +5,7 @@
 export type AppointmentStatus =
   | "booked"
   | "confirmed"
+  | "arrived"
   | "inProgress"
   | "completed"
   | "cancelled"
@@ -12,6 +13,7 @@ export type AppointmentStatus =
 
 export type PaymentStatus =
   | "unpaid"
+  | "deposit_paid"
   | "partial"
   | "paid"
   | "refundProcessing"
@@ -190,3 +192,4 @@ export type OpsView =
   | "addExpense"
   | "editExpense"
   | "financialReports"
+  | "support"

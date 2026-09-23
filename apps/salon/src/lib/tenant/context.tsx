@@ -1,7 +1,7 @@
 'use client'
 
 import React, { createContext, useContext } from 'react'
-import { useAuth } from '@/application/auth'
+import { useAuth } from '@byb/auth'
 import type { TenantContextState } from './types'
 
 const TenantContext = createContext<TenantContextState>({

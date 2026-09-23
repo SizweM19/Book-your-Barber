@@ -13,8 +13,8 @@ function resolveEffectiveNow(date?: string, now?: Date): Date {
   }
   return new Date();
 }
-import type { RepositoryContainer } from '@/infrastructure/repositories/container'
-import { repositories as defaultRepositories } from '@/infrastructure/repositories/container'
+import type { RepositoryContainer } from '@byb/database'
+import { repositories as defaultRepositories } from '@byb/database'
 import type {
   CanonicalStaffWorkingHours,
   CanonicalScheduleBreak,
@@ -23,7 +23,7 @@ import type {
   StaffAssignmentStrategy,
   WorkPeriod,
 } from '@/domains/canonical/types'
-import type { StaffEntity } from '@/application/repositories/interfaces'
+import type { StaffEntity } from '@byb/database'
 
 export const DEFAULT_SLOT_INTERVAL_MINUTES = 30
 

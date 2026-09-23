@@ -1,6 +1,6 @@
 import React, { useState, useEffect } from "react"
-import { repositories } from "@/infrastructure/repositories/container"
-import type { ServiceEntity } from "@/application/repositories/interfaces"
+import { repositories } from "@byb/database"
+import type { ServiceEntity } from "@byb/database"
 import { useTenantContext } from "@/application/tenant"
 import { fmtR, Card, SectionTitle, PrimaryBtn, SecondaryBtn, EmptyState } from "./shared"
 

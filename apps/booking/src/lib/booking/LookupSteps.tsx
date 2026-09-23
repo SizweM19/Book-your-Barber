@@ -1,9 +1,184 @@
 'use client'
 
 import React, { useState } from "react"
-import { BookingData, Service, SERVICES, STAFF } from "./types"
-import { StepHeader, CtaBar, DetailRow, formatDateLong, formatDateShort } from "./shared"
+import { formatZAR } from "@/domains/payments/money"
+import { calculateCancellationFee } from "@/domains/appointments/rules"
+import { appointmentService } from "@/application/services/AppointmentService"
+import { BookingData } from "./types"
+import {
+  SALON_NAME, SALON_ADDRESS, SALON_MAPS_URL, SALON_PHONE
+} from "./constants"
+import {
+  StepHeader, DetailRow,
+  formatDateLong, downloadIcsCalendar
+} from "./shared"
 
+// ─── 21. BOOKING LOOKUP ───────────────────────────────────────────────────────
+
+export function BookingLookupStep({ onBack, onFind }: {
+  onBack: () => void
+  onFind: (record: NonNullable<BookingData["lookupRecord"]>) => void
+}) {
+  const [ref,     setRef]     = useState("")
+  const [contact, setContact] = useState("")
+  const [loading, setLoading] = useState(false)
+  const [errorMsg, setErrorMsg] = useState<string | null>(null)
+  const valid = ref.trim().length >= 10 && contact.trim().length >= 5
+
+  const inputCls = "w-full px-4 py-[13px] rounded-xl border-2 border-gray-200 text-gray-900 placeholder-gray-300 focus:border-gray-900 outline-none transition-colors text-[14px] bg-white"
+
+  async function handleFind() {
+    if (!valid) return
+    setLoading(true)
+    setErrorMsg(null)
+    try {
+      const cleanRef = ref.trim().toUpperCase()
+      const { booking, error } = await appointmentService.lookupGuestBooking(cleanRef, contact)
+      if (error || !booking) {
+        setErrorMsg(error || "No booking found with this reference.")
+        setLoading(false)
+        return
+      }
+
+      const lookupRecord = {
+        reference: booking.bookingReference,
+        salon: booking.salonName,
+        address: booking.salonAddress,
+        service: booking.serviceName,
+        staff: booking.staffName,
+        date: booking.appointmentDate,
+        time: booking.startTime,
+        duration: `${booking.durationMinutes} min`,
+        paymentStatus: booking.paymentStatus === "paid" ? `Paid · R${booking.totalCharged}` : "Pay at shop",
+        bookingStatus: booking.status.charAt(0).toUpperCase() + booking.status.slice(1),
+        appointmentId: booking.id,
+        totalPaid: booking.totalPaid,
+        price: booking.totalCharged,
+        contact,
+      }
+
+      onFind(lookupRecord)
+    } catch {
+      setErrorMsg("Failed to find booking. Please check your reference.")
+    } finally {
+      setLoading(false)
+    }
+  }
+
+  return (
+    <div className="flex flex-col min-h-full bg-white">
+      <StepHeader title="Find my booking" onBack={onBack} />
+      <div className="flex-1 px-4 py-4 space-y-4">
+        <p className="text-[13px] text-gray-500 leading-relaxed">Enter your booking reference and the phone number or email you used when booking.</p>
+
+        <div>
+          <label className="block text-[11px] font-bold uppercase tracking-widest text-gray-400 mb-2">Booking reference</label>
+          <input
+            type="text"
+            value={ref}
+            onChange={e => setRef(e.target.value.toUpperCase())}
+            placeholder="BYB-20260908-00482"
+            className={`${inputCls} font-mono tracking-widest`}
+          />
+        </div>
+
+        <div>
+          <label className="block text-[11px] font-bold uppercase tracking-widest text-gray-400 mb-2">Phone number or email</label>
+          <input
+            type="text"
+            value={contact}
+            onChange={e => setContact(e.target.value)}
+            placeholder="082 123 4567 or sipho@gmail.com"
+            className={inputCls}
+          />
+        </div>
+
+        {errorMsg && (
+          <div className="p-3 bg-red-50 border border-red-100 rounded-xl text-[13px] text-red-700 font-medium">
+            {errorMsg}
+          </div>
+        )}
+
+        <div className="flex items-start gap-3 p-3.5 bg-gray-50 rounded-xl">
+          <span className="text-gray-400 text-base flex-shrink-0 mt-0.5">ℹ️</span>
+          <p className="text-[12px] text-gray-500 leading-relaxed">No account needed. Your booking reference was sent in your confirmation message.</p>
+        </div>
+      </div>
+
+      <div className="sticky bottom-0 bg-white/95 backdrop-blur-sm border-t border-gray-100 px-4 pt-3 pb-5 mt-auto">
+        <button
+          onClick={handleFind}
+          disabled={!valid || loading}
+          className={`w-full py-[15px] rounded-2xl font-bold text-[15px] transition-all duration-150 flex items-center justify-center gap-2 ${
+            valid && !loading ? "bg-gray-900 text-white active:scale-[0.98] shadow-sm" : "bg-gray-100 text-gray-400 cursor-not-allowed"
+          }`}
+        >
+          {loading ? <><div className="w-4 h-4 border-2 border-white/30 border-t-white rounded-full animate-spin" /> Finding…</> : "Find booking"}
+        </button>
+      </div>
+    </div>
+  )
+}
+
+// ─── 22. BOOKING DETAILS ──────────────────────────────────────────────────────
+
+export function BookingDetailsStep({
+  booking,
+  onBack,
+  onCancel,
+  onReschedule,
+}: {
+  booking: BookingData
+  onBack: () => void
+  onCancel: () => void
+  onReschedule: () => void
+}) {
+  if (!booking.lookupRecord && !booking.reference) {
+    return (
+      <div className="flex flex-col min-h-full bg-white">
+        <StepHeader title="Booking details" onBack={onBack} />
+        <div className="flex-1 px-4 py-12 flex flex-col items-center justify-center text-center">
+          <div className="w-12 h-12 rounded-full bg-gray-100 flex items-center justify-center text-gray-400 mb-3">
+            <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+              <circle cx="12" cy="12" r="10" />
+              <line x1="12" y1="8" x2="12" y2="12" />
+              <line x1="12" y1="16" x2="12.01" y2="16" />
+            </svg>
+          </div>
+          <p className="text-[16px] font-bold text-gray-900">No booking found</p>
+          <p className="text-[13px] text-gray-500 mt-1 mb-6">We could not find an active or verified booking record.</p>
+          <button onClick={onBack} className="px-5 py-2.5 bg-gray-900 text-white rounded-xl text-[13px] font-semibold hover:bg-gray-800 transition-colors">Go back</button>
+        </div>
+      </div>
+    )
+  }
+
+  const b = booking.lookupRecord || {
+    reference: booking.reference || "",
+    salon: SALON_NAME,
+    address: SALON_ADDRESS,
+    service: booking.service?.name || "Service",
+    staff: booking.staff === null ? "Any Available" : (booking.staff?.name || "Any Barber"),
+    date: booking.date || "",
+    time: booking.time || "",
+    duration: booking.service ? `${booking.service.duration} min` : "30 min",
+    paymentStatus: booking.paymentMethod === "card" ? "Paid" : "Pay at shop",
+    bookingStatus: "Confirmed",
+    appointmentId: booking.appointmentId || "",
+    totalPaid: booking.service?.price || 0,
+    price: booking.service?.price || 0,
+  }
+  return (
+    <div className="flex flex-col min-h-full bg-white">
+      <StepHeader title="Booking details" onBack={onBack} />
+      <div className="flex-1 px-4 py-4 space-y-3 pb-6">
+        <div className="rounded-2xl border border-gray-100 overflow-hidden">
+          <div className="bg-gray-900 px-4 py-3.5">
+            <p className="text-white/50 text-[11px] font-bold uppercase tracking-widest">{b.salon}</p>
+            <p className="text-white font-bold text-[17px] mt-0.5 tracking-tight">{b.service}</p>
+          </div>
+          <DetailRow label="With"           value={b.staff} />
+          <DetailRow label="Date"           value={b.date} />
           <DetailRow label="Time"           value={b.time} />
           <DetailRow label="Duration"       value={b.duration} />
           <DetailRow label="Payment"        value={b.paymentStatus} accent />
@@ -12,7 +187,10 @@ import { StepHeader, CtaBar, DetailRow, formatDateLong, formatDateShort } from "
 
         <div className="rounded-2xl border border-gray-100 px-4 py-3.5 flex items-start justify-between gap-3">
           <div className="flex items-start gap-3">
-            <span className="text-lg flex-shrink-0 mt-0.5">📍</span>
+            <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" className="text-gray-700 flex-shrink-0 mt-0.5">
+              <path d="M20 10c0 6-8 12-8 12s-8-6-8-12a8 8 0 0 1 16 0Z" />
+              <circle cx="12" cy="10" r="3" />
+            </svg>
             <div>
               <p className="font-semibold text-[13px] text-gray-900">{b.salon}</p>
               <p className="text-[12px] text-gray-500 mt-0.5 leading-snug">{b.address}</p>
@@ -33,9 +211,15 @@ import { StepHeader, CtaBar, DetailRow, formatDateLong, formatDateShort } from "
               const desc = `Booking Ref: ${b.reference}\nWith: ${b.staff}\nStatus: ${b.bookingStatus}`
               downloadIcsCalendar(title, desc, `${b.salon}, ${b.address}`, b.date, b.time, parseInt(b.duration) || 45)
             }}
-            className="w-full py-[13px] bg-gray-900 text-white rounded-2xl font-semibold text-[14px] active:scale-[0.98] transition-transform flex items-center justify-center gap-2 shadow-sm"
+            className="w-full py-[13px] bg-gray-900 text-white rounded-2xl font-semibold text-[14px] active:scale-[0.98] transition-transform flex items-center justify-center gap-2"
           >
-            <span>📅</span> Add to calendar
+            <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+              <rect x="3" y="4" width="18" height="18" rx="2" ry="2" />
+              <line x1="16" y1="2" x2="16" y2="6" />
+              <line x1="8" y1="2" x2="8" y2="6" />
+              <line x1="3" y1="10" x2="21" y2="10" />
+            </svg>
+            <span>Add to calendar</span>
           </button>
           <div className="grid grid-cols-2 gap-2">
             <button onClick={onReschedule} className="py-[13px] border-2 border-gray-200 text-gray-700 rounded-2xl font-semibold text-[13px] hover:border-gray-300 transition-colors">Reschedule</button>
@@ -55,7 +239,7 @@ import { StepHeader, CtaBar, DetailRow, formatDateLong, formatDateShort } from "
 
 // ─── 23. RESCHEDULE SUCCESS ───────────────────────────────────────────────────
 
-function RescheduleSuccessStep({ booking, onDone }: { booking: BookingData; onDone?: () => void }) {
+export function RescheduleSuccessStep({ booking, onDone }: { booking: BookingData; onDone?: () => void }) {
   const serviceName = booking.service?.name ?? booking.lookupRecord?.service ?? "Barber Service"
   const staffName   = booking.staff === null ? "Any Available" : (booking.staff?.name ?? booking.lookupRecord?.staff ?? "Barber")
   const dateStr     = booking.date ? formatDateLong(booking.date) : (booking.lookupRecord?.date ?? "—")
@@ -95,7 +279,7 @@ function RescheduleSuccessStep({ booking, onDone }: { booking: BookingData; onDo
 
 // ─── 24. RESCHEDULE FAILURE ───────────────────────────────────────────────────
 
-function RescheduleFailureStep({
+export function RescheduleFailureStep({
   error,
   onChooseTime,
   onChooseDate,
@@ -127,7 +311,7 @@ function RescheduleFailureStep({
 
 // ─── 25. CANCELLATION REVIEW ──────────────────────────────────────────────────
 
-function CancellationReviewStep({
+export function CancellationReviewStep({
   booking,
   onConfirm,
   onKeep,
@@ -177,13 +361,13 @@ function CancellationReviewStep({
 
         <div className="rounded-2xl border border-gray-100 overflow-hidden">
           <DetailRow label="Booking reference" value={refText} />
-          <DetailRow label={serviceName} value={`R${price}`} />
+          <DetailRow label={serviceName} value={formatZAR(price)} />
           {amountPaid > 0 && (
             <>
-              <DetailRow label={`Cancellation fee (${feePct}%)`} value={`R${feeAmount}`} />
+              <DetailRow label={`Cancellation fee (${feePct}%)`} value={formatZAR(feeAmount)} />
               <div className="flex justify-between items-center px-4 py-4 bg-gray-50">
                 <span className="font-bold text-[15px] text-gray-900">Refund amount</span>
-                <span className="font-black text-[18px] text-emerald-600">R${refundAmount}</span>
+                <span className="font-black text-[18px] text-emerald-600">{formatZAR(refundAmount)}</span>
               </div>
             </>
           )}
@@ -212,7 +396,7 @@ function CancellationReviewStep({
 
 // ─── 26. CANCELLATION CONFIRMED ───────────────────────────────────────────────
 
-function CancellationConfirmedStep({
+export function CancellationConfirmedStep({
   booking,
   onBackToSalon,
 }: {
@@ -221,16 +405,21 @@ function CancellationConfirmedStep({
 }) {
   const res = booking.cancellationResult
   const isCash =
-    (!res?.feeAmount && !res?.refundAmount) &&
-    (booking.paymentMethod === "cash" || booking.lookupRecord?.paymentStatus === "Pay at shop")
+    (!res?.feeAmount && !res?.refundAmount && res?.paidAmount === 0) ||
+    (!res?.feeAmount && !res?.refundAmount && (booking.paymentMethod === "cash" || booking.lookupRecord?.paymentStatus === "Pay at shop"))
   const feePct = res?.feePercent ?? 10
   const feeAmount = res?.feeAmount ?? 0
   const refundAmount = res?.refundAmount ?? 0
   const ref =
-    res?.reference ??
-    booking.reference ??
-    booking.lookupRecord?.reference ??
+    res?.reference ||
+    booking.reference ||
+    booking.lookupRecord?.reference ||
     "—"
+  const serviceName =
+    res?.serviceName ||
+    booking.service?.name ||
+    booking.lookupRecord?.service ||
+    "Barber Service"
 
   return (
     <div className="flex flex-col items-center bg-white min-h-full">
@@ -247,7 +436,11 @@ function CancellationConfirmedStep({
       <div className="px-4 py-4 space-y-3 w-full">
         {isCash ? (
           <div className="rounded-2xl bg-gray-50 border border-gray-100 px-4 py-3.5 flex items-start gap-3">
-            <span className="text-xl flex-shrink-0 mt-0.5">ℹ️</span>
+            <div className="w-5 h-5 rounded-full bg-gray-200 flex items-center justify-center flex-shrink-0 mt-0.5 text-gray-600">
+              <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round">
+                <circle cx="12" cy="12" r="10"/><line x1="12" y1="16" x2="12" y2="12"/><line x1="12" y1="8" x2="12.01" y2="8"/>
+              </svg>
+            </div>
             <div>
               <p className="font-bold text-[13px] text-gray-900">Slot Released</p>
               <p className="text-[12px] text-gray-600 mt-0.5 leading-snug">
@@ -258,16 +451,21 @@ function CancellationConfirmedStep({
         ) : (
           <>
             <div className="rounded-2xl border border-gray-100 overflow-hidden">
-              <DetailRow label={`Cancellation fee (${feePct}%)`} value={`R${feeAmount}`} />
-              <DetailRow label="Refund amount" value={`R${refundAmount}`} accent />
+              <DetailRow label="Service" value={serviceName} />
+              <DetailRow label={`Cancellation fee (${feePct}%)`} value={formatZAR(feeAmount)} />
+              <DetailRow label="Refund amount" value={formatZAR(refundAmount)} accent />
             </div>
 
             <div className="rounded-2xl bg-emerald-50 border border-emerald-100 px-4 py-3.5 flex items-start gap-3">
-              <span className="text-xl flex-shrink-0 mt-0.5">💚</span>
+              <div className="w-5 h-5 rounded-full bg-emerald-500 flex items-center justify-center flex-shrink-0 mt-0.5">
+                <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="white" strokeWidth="3" strokeLinecap="round" strokeLinejoin="round">
+                  <path d="M20 6L9 17l-5-5"/>
+                </svg>
+              </div>
               <div>
                 <p className="font-bold text-[13px] text-emerald-900">Refund processing</p>
                 <p className="text-[12px] text-emerald-700 mt-0.5 leading-snug">
-                  Please allow 3–5 business days for R{refundAmount} to reflect on your original payment method.
+                  Please allow 3–5 business days for {formatZAR(refundAmount)} to be returned to your original payment method.
                 </p>
               </div>
             </div>
@@ -291,193 +489,3 @@ function CancellationConfirmedStep({
     </div>
   )
 }
-
-// ─── 27. SALON CANCELLED ─────────────────────────────────────────────────────
-
-function SalonCancelledStep({ booking }: { booking: BookingData }) {
-  const price = booking.service?.price ?? 150
-  const ref   = booking.reference ?? "BYB-20260908-00482"
-
-  return (
-    <div className="flex flex-col items-center bg-white min-h-full">
-      <div className="bg-gray-900 w-full px-5 pt-10 pb-8 text-center">
-        <div className="w-16 h-16 rounded-full bg-amber-500 flex items-center justify-center mx-auto mb-4 anim-pop">
-          <svg width="26" height="26" viewBox="0 0 24 24" fill="none" stroke="white" strokeWidth="2.5" strokeLinecap="round">
-            <path d="M10.29 3.86L1.82 18a2 2 0 001.71 3h16.94a2 2 0 001.71-3L13.71 3.86a2 2 0 00-3.42 0z"/>
-            <line x1="12" y1="9" x2="12" y2="13"/><line x1="12" y1="17" x2="12.01" y2="17"/>
-          </svg>
-        </div>
-        <h1 className="text-white font-black text-[22px] tracking-tight">Salon cancelled your appointment</h1>
-        <p className="text-white/50 text-[13px] mt-1">We apologise for the inconvenience</p>
-      </div>
-
-      <div className="px-4 py-4 space-y-3 w-full">
-        <div className="rounded-2xl border border-gray-100 overflow-hidden">
-          <DetailRow label="Service" value={booking.service?.name ?? "—"} />
-          <DetailRow label="Date"    value={booking.date ? formatDateLong(booking.date) : "—"} />
-          <DetailRow label="Time"    value={booking.time ?? "—"} />
-        </div>
-
-        <div className="rounded-2xl bg-emerald-50 border border-emerald-100 px-4 py-3.5 flex items-start gap-3">
-          <span className="text-xl flex-shrink-0 mt-0.5">💚</span>
-          <div>
-            <p className="font-bold text-[13px] text-emerald-900">Full refund initiated</p>
-            <p className="text-[12px] text-emerald-700 mt-0.5 leading-snug">Your full refund of R{price} has been initiated. Please allow 3–5 business days.</p>
-          </div>
-        </div>
-
-        <div className="bg-gray-900 rounded-2xl p-4">
-          <p className="text-white/40 text-[11px] font-bold uppercase tracking-widest mb-2">Booking Reference</p>
-          <p className="text-white font-mono text-[15px] font-black tracking-wider">{ref}</p>
-        </div>
-
-        <button className="w-full py-[13px] border-2 border-gray-200 text-gray-700 rounded-2xl font-semibold text-[14px] hover:border-gray-300 transition-colors">
-          Contact BookYourBarber support
-        </button>
-      </div>
-    </div>
-  )
-}
-
-// ─── 28–30. REFUND STATES ────────────────────────────────────────────────────
-
-function RefundBanner({ icon, title, body, ref: bookingRef, accent = false }: {
-  icon: string; title: string; body: string; ref: string; accent?: boolean
-}) {
-  return (
-    <div className="flex flex-col items-center justify-center min-h-full bg-white px-6 text-center">
-      <div className={`w-20 h-20 rounded-full flex items-center justify-center mb-6 anim-pop text-3xl ${accent ? "bg-emerald-50" : "bg-gray-50"}`}>
-        {icon}
-      </div>
-      <h2 className="text-[22px] font-black text-gray-900 mb-2 tracking-tight">{title}</h2>
-      <p className="text-[13px] text-gray-500 leading-relaxed mb-8">{body}</p>
-      <div className="w-full bg-gray-900 rounded-2xl p-4 text-left">
-        <p className="text-white/40 text-[11px] font-bold uppercase tracking-widest mb-2">Booking Reference</p>
-        <p className="text-white font-mono text-[15px] font-black tracking-wider">{bookingRef}</p>
-      </div>
-    </div>
-  )
-}
-
-function RefundProcessingStep({ booking }: { booking: BookingData }) {
-  return <RefundBanner icon="⏳" title="Refund processing" body="Your refund is being processed. This usually takes 3–5 business days." ref={booking.reference ?? "BYB-20260908-00482"} />
-}
-function RefundCompletedStep({ booking }: { booking: BookingData }) {
-  return <RefundBanner icon="✅" title="Refund completed" body="Your refund has been processed and should reflect on your original payment method." ref={booking.reference ?? "BYB-20260908-00482"} accent />
-}
-function RefundFailedStep({ booking }: { booking: BookingData }) {
-  return (
-    <div className="flex flex-col items-center justify-center min-h-full bg-white px-6 text-center">
-      <div className="w-20 h-20 rounded-full bg-red-50 flex items-center justify-center mb-6 anim-pop">
-        <svg width="34" height="34" viewBox="0 0 24 24" fill="none" stroke="#EF4444" strokeWidth="2.5" strokeLinecap="round">
-          <circle cx="12" cy="12" r="10"/><path d="M15 9l-6 6M9 9l6 6"/>
-        </svg>
-      </div>
-      <h2 className="text-[22px] font-black text-gray-900 mb-2 tracking-tight">Refund could not be completed</h2>
-      <p className="text-[13px] text-gray-500 leading-relaxed mb-8">Please contact BookYourBarber support with your booking reference and we will resolve this for you.</p>
-      <div className="w-full bg-gray-900 rounded-2xl p-4 text-left mb-4">
-        <p className="text-white/40 text-[11px] font-bold uppercase tracking-widest mb-2">Booking Reference</p>
-        <p className="text-white font-mono text-[15px] font-black tracking-wider">{booking.reference ?? "BYB-20260908-00482"}</p>
-      </div>
-      <button className="w-full py-[15px] bg-gray-900 text-white rounded-2xl font-bold text-[15px] active:scale-[0.98] shadow-sm">Contact support</button>
-    </div>
-  )
-}
-
-// ─── 31. SESSION EXPIRED ─────────────────────────────────────────────────────
-
-function SessionExpiredStep({ onRestart }: { onRestart: () => void }) {
-  return (
-    <div className="flex flex-col items-center justify-center min-h-full bg-white px-6 text-center">
-      <div className="w-20 h-20 rounded-full bg-gray-50 flex items-center justify-center mb-6">
-        <svg width="34" height="34" viewBox="0 0 24 24" fill="none" stroke="#9CA3AF" strokeWidth="2" strokeLinecap="round">
-          <circle cx="12" cy="12" r="10"/><polyline points="12 6 12 12 16 14"/>
-        </svg>
-      </div>
-      <h2 className="text-[22px] font-black text-gray-900 mb-2 tracking-tight">Your session has expired</h2>
-      <p className="text-[13px] text-gray-500 leading-relaxed mb-8">For your security, your session has timed out. Please start a new booking.</p>
-      <button onClick={onRestart} className="w-full py-[15px] bg-gray-900 text-white rounded-2xl font-bold text-[15px] active:scale-[0.98] shadow-sm">Start booking again</button>
-    </div>
-  )
-}
-
-// ─── 32. RATE LIMITED ─────────────────────────────────────────────────────────
-
-function RateLimitedStep() {
-  return (
-    <div className="flex flex-col items-center justify-center min-h-full bg-white px-6 text-center">
-      <div className="w-20 h-20 rounded-full bg-amber-50 flex items-center justify-center mb-6">
-        <svg width="34" height="34" viewBox="0 0 24 24" fill="none" stroke="#F59E0B" strokeWidth="2.5" strokeLinecap="round">
-          <circle cx="12" cy="12" r="10"/><path d="M12 8v4m0 4h.01"/>
-        </svg>
-      </div>
-      <h2 className="text-[22px] font-black text-gray-900 mb-2 tracking-tight">Too many attempts</h2>
-      <p className="text-[13px] text-gray-500 leading-relaxed mb-8">Please wait a moment before trying again. This is to keep bookings fair for everyone.</p>
-      <button className="w-full py-[15px] border-2 border-gray-200 text-gray-700 rounded-2xl font-semibold text-[15px] hover:border-gray-300 transition-colors">Try again in a moment</button>
-    </div>
-  )
-}
-
-// ─── 33. LOADING STATE ────────────────────────────────────────────────────────
-
-function LoadingStep() {
-  return (
-    <div className="flex flex-col bg-white min-h-full px-4 py-5">
-      <div className="flex items-center gap-3 mb-7">
-        <div className="w-9 h-9 bg-gray-100 rounded-full animate-pulse" />
-        <div className="h-4 w-36 bg-gray-100 rounded-full animate-pulse" />
-      </div>
-      <div className="space-y-3">
-        {[100, 75, 90, 65].map((w, i) => (
-          <div key={i} className="p-4 rounded-2xl border-2 border-gray-100">
-            <div className="h-4 bg-gray-100 rounded-full animate-pulse mb-2.5" style={{width:`${w}%`}} />
-            <div className="h-3 w-1/2 bg-gray-50 rounded-full animate-pulse mb-3" />
-            <div className="flex justify-between items-center">
-              <div className="h-3 w-16 bg-gray-50 rounded-full animate-pulse" />
-              <div className="h-6 w-12 bg-gray-100 rounded-full animate-pulse" />
-            </div>
-          </div>
-        ))}
-      </div>
-      <div className="flex items-center justify-center gap-2 mt-auto pt-16">
-        {[0,150,300].map(delay => (
-          <div key={delay} className="w-2 h-2 rounded-full bg-gray-300 animate-bounce" style={{animationDelay:`${delay}ms`}} />
-        ))}
-      </div>
-    </div>
-  )
-}
-
-// ─── 34. ERROR STATE ──────────────────────────────────────────────────────────
-
-function ErrorStep({ onRetry }: { onRetry: () => void }) {
-  return (
-    <div className="flex flex-col items-center justify-center min-h-full bg-white px-6 text-center">
-      <div className="w-20 h-20 rounded-full bg-red-50 flex items-center justify-center mb-6 anim-pop">
-        <svg width="34" height="34" viewBox="0 0 24 24" fill="none" stroke="#EF4444" strokeWidth="2.5" strokeLinecap="round">
-          <circle cx="12" cy="12" r="10"/><path d="M12 8v4m0 4h.01"/>
-        </svg>
-      </div>
-      <h2 className="text-[22px] font-black text-gray-900 mb-2 tracking-tight">We could not connect to BookYourBarber</h2>
-      <p className="text-[13px] text-gray-500 leading-relaxed mb-2">Check your internet connection and try again. Your booking progress has not been lost.</p>
-      <p className="text-[12px] text-gray-400 mb-10 font-mono">NETWORK_TIMEOUT · 503</p>
-      <div className="w-full space-y-3">
-        <button onClick={onRetry} className="w-full py-[15px] bg-gray-900 text-white rounded-2xl font-bold text-[15px] active:scale-[0.98] transition-transform shadow-sm">Try again</button>
-        <button className="w-full py-[15px] border-2 border-gray-200 text-gray-700 rounded-2xl font-semibold text-[15px] hover:border-gray-300 transition-colors">Contact support</button>
-      </div>
-    </div>
-  )
-}
-
-// ─── DEMO NAV ─────────────────────────────────────────────────────────────────
-
-const DEMO_STEPS: { key: Step; label: string; emoji: string }[] = [
-  { key:"salon",                    label:"Salon landing",            emoji:"🏪" },
-  { key:"service",                  label:"Service selection",        emoji:"✂️" },
-  { key:"staff",                    label:"Staff selection",          emoji:"👤" },
-  { key:"date",                     label:"Date selection",           emoji:"📆" },
-  { key:"time",                     label:"Time slots",               emoji:"🕐" },
-  { key:"info",                     label:"Customer info",            emoji:"📝" },
-  { key:"reminder",                 label:"Reminder channel",         emoji:"🔔" },
-  { key:"summary",                  label:"Booking summary",          emoji:"📋" },
-  { key:"paymentMethod",            label:"Payment method",           emoji:"💰" },

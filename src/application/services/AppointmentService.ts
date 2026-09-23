@@ -115,6 +115,7 @@ export class AppointmentService {
     // Publish appointment.cancelled domain event
     try {
       const cust = await this.repos.customers.findById(appt.customerId)
+      const svc = await this.repos.services.findById(appt.serviceId)
       const salon = await this.repos.salons.findByTenantId(appt.tenantId)
 
       await eventBus.publish({
@@ -135,7 +136,7 @@ export class AppointmentService {
         feePercent: feeCalc.feePercent,
         feeAmount: feeCalc.feeAmount,
         refundAmount: feeCalc.refundAmount,
-        reminderChannel: appt.reminderChannel,
+        reminderChannel: appt.reminderChannel || 'none',
         salonName: salon?.name || 'Fade & Edge Barbershop',
       })
     } catch {

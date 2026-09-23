@@ -61,22 +61,32 @@ export interface RepositoryContainer {
   templates: TemplateRepository
 }
 
-// Singleton instances for Mock Data Mode
-const mockContainer: RepositoryContainer = {
-  salons: new MockSalonRepository(),
-  customers: new MockCustomerRepository(),
-  services: new MockServiceRepository(),
-  staff: new MockStaffRepository(),
-  appointments: new MockAppointmentRepository(),
-  payments: new MockPaymentRepository(),
-  refunds: new MockRefundRepository(),
-  expenses: new MockExpenseRepository(),
-  staffServices: new MockStaffServiceRepository(),
-  schedules: new MockScheduleRepository(),
-  settings: new MockSalonSettingsRepository(),
-  notifications: new MockNotificationRepository(),
-  templates: new MockTemplateRepository(),
+export function createMockContainer(): RepositoryContainer {
+  return {
+    salons: new MockSalonRepository(),
+    customers: new MockCustomerRepository(),
+    services: new MockServiceRepository(),
+    staff: new MockStaffRepository(),
+    appointments: new MockAppointmentRepository(),
+    payments: new MockPaymentRepository(),
+    refunds: new MockRefundRepository(),
+    expenses: new MockExpenseRepository(),
+    staffServices: new MockStaffServiceRepository(),
+    schedules: new MockScheduleRepository(),
+    settings: new MockSalonSettingsRepository(),
+    notifications: new MockNotificationRepository(),
+    templates: new MockTemplateRepository(),
+  }
 }
+
+// Singleton instances for Mock Data Mode
+let mockContainer: RepositoryContainer = createMockContainer()
+
+export function resetMockContainer(): RepositoryContainer {
+  mockContainer = createMockContainer()
+  return mockContainer
+}
+
 
 export function createSupabaseContainer(client?: any): RepositoryContainer {
   return {

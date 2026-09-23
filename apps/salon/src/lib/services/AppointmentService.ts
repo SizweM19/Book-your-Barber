@@ -1,11 +1,11 @@
-import type { RepositoryContainer } from '@/infrastructure/repositories/container'
-import { repositories as defaultRepositories } from '@/infrastructure/repositories/container'
+import type { RepositoryContainer } from '@byb/database'
+import { repositories as defaultRepositories } from '@byb/database'
 import {
   canCompleteAppointment,
   calculateCancellationFee,
   canRescheduleAppointment,
 } from '@/domains/appointments/rules'
-import type { AppointmentEntity } from '@/application/repositories/interfaces'
+import type { AppointmentEntity } from '@byb/database'
 import { AvailabilityService } from './AvailabilityService'
 import { eventBus } from './EventBus'
 
@@ -41,8 +41,7 @@ export class AppointmentService {
     id: string,
     cancelledBy: 'customer' | 'salon',
     bookingReference?: string,
-    referenceTimeOrContact?: Date | string,
-    verificationContactParam?: string
+    verificationContact?: string
   ): Promise<{
     appointment?: AppointmentEntity
     feePercent: number
@@ -52,67 +51,29 @@ export class AppointmentService {
     serviceName?: string
     error?: string
   }> {
-    const referenceTime =
-      referenceTimeOrContact instanceof Date ? referenceTimeOrContact : new Date()
-    const verificationContact =
-      typeof referenceTimeOrContact === 'string'
-        ? referenceTimeOrContact
-        : verificationContactParam
-
-    // In browser context for customer cancellations, delegate to secure server-side endpoint
-    // to bypass anonymous Row Level Security (RLS) constraints on Supabase
-    if (typeof window !== 'undefined' && cancelledBy === 'customer') {
-      try {
-        const response = await fetch('/api/appointments/cancel', {
-          method: 'POST',
-          headers: { 'Content-Type': 'application/json' },
-          body: JSON.stringify({
-            appointmentId: id,
-            bookingReference,
-            cancelledBy,
-            verificationContact,
-          }),
-        })
-        const data = await response.json()
-        if (!response.ok || !data.success) {
-          return {
-            feePercent: 0,
-            feeAmount: 0,
-            refundAmount: 0,
-            error: data.error || 'Failed to cancel appointment',
-          }
-        }
-        return {
-          appointment: data.appointment,
-          feePercent: data.feePercent,
-          feeAmount: data.feeAmount,
-          refundAmount: data.refundAmount,
-          bookingReference: data.bookingReference,
-          serviceName: data.serviceName,
-        }
-      } catch (err: any) {
-        return {
-          feePercent: 0,
-          feeAmount: 0,
-          refundAmount: 0,
-          error: err.message || 'Network error during cancellation',
-        }
-      }
+    let appt = id ? await this.repos.appointments.findById(id) : null
+    if (!appt && bookingReference && this.repos.appointments.findByReference) {
+      appt = await this.repos.appointments.findByReference(bookingReference)
     }
-
-    const appt = await this.repos.appointments.findById(id)
     if (!appt) return { feePercent: 0, feeAmount: 0, refundAmount: 0, error: 'Appointment not found' }
 
-    if (appt.status === 'cancelled') {
-      return { feePercent: 0, feeAmount: 0, refundAmount: 0, error: 'Appointment is already cancelled.' }
-    }
-
-    if (appt.status === 'completed') {
-      return { feePercent: 0, feeAmount: 0, refundAmount: 0, error: 'Completed appointments cannot be cancelled.' }
-    }
-
-    if (appt.status === 'noShow') {
-      return { feePercent: 0, feeAmount: 0, refundAmount: 0, error: 'No-show appointments cannot be cancelled.' }
+    if (verificationContact && cancelledBy === 'customer') {
+      const cust = await this.repos.customers.findById(appt.customerId)
+      if (cust) {
+        const cleanInput = verificationContact.trim().toLowerCase().replace(/[\s\-\(\)]/g, '')
+        const custPhone = cust.phone.replace(/[\s\-\(\)]/g, '')
+        const custEmail = cust.email?.toLowerCase() || ''
+        const matches =
+          (custPhone &&
+            (cleanInput.includes(custPhone) ||
+              custPhone.includes(cleanInput) ||
+              custPhone.endsWith(cleanInput) ||
+              cleanInput.endsWith(custPhone))) ||
+          (custEmail && custEmail === cleanInput)
+        if (!matches) {
+          return { feePercent: 0, feeAmount: 0, refundAmount: 0, error: 'The contact details do not match this booking.' }
+        }
+      }
     }
 
     // Calculate cancellation fee using domain rules
@@ -120,43 +81,35 @@ export class AppointmentService {
     const feeCalc = calculateCancellationFee(
       appt.totalPaid,
       apptDateTime,
-      cancelledBy,
-      referenceTime
+      cancelledBy
     )
 
     // Update appointment status to cancelled
     const updated = await this.repos.appointments.updateStatus(id, 'cancelled')
 
-    // If eligible for refund, create refund record with duplicate protection
+    // If eligible for refund, create refund record
     if (feeCalc.isEligibleForRefund) {
-      const idempotencyKey = `cancel_${appt.id}`
-      let hasActiveRefund = false
-      if (this.repos.refunds.listByAppointment) {
-        const existingRefunds = await this.repos.refunds.listByAppointment(appt.id)
-        hasActiveRefund = existingRefunds.some(
-          r => r.status === 'requested' || r.status === 'processing' || r.status === 'completed'
-        )
-      }
+      await this.repos.refunds.create({
+        tenantId: appt.tenantId,
+        refundReference: `REF-${Date.now()}-${Math.floor(Math.random() * 9000 + 1000)}`,
+        appointmentId: appt.id,
+        customerId: appt.customerId,
+        originalAmount: appt.totalPaid,
+        feePercent: feeCalc.feePercent,
+        feeAmount: feeCalc.feeAmount,
+        refundAmount: feeCalc.refundAmount,
+        status: 'requested',
+        cancelledBy,
+      })
+    }
 
-      if (!hasActiveRefund) {
-        await this.repos.refunds.create({
-          tenantId: appt.tenantId,
-          refundReference: `REF-${Date.now()}-${Math.floor(Math.random() * 9000 + 1000)}`,
-          appointmentId: appt.id,
-          customerId: appt.customerId,
-          originalAmount: appt.totalPaid,
-          feePercent: feeCalc.feePercent,
-          feeAmount: feeCalc.feeAmount,
-          refundAmount: feeCalc.refundAmount,
-          status: 'requested',
-          cancelledBy,
-          idempotencyKey,
-        })
-      }
-
-      try {
-        await this.repos.appointments.recordPayment(id, 0, 'refundProcessing')
-      } catch {}
+    // Lookup service name for return value (best-effort, outside try)
+    let svcName: string | undefined
+    try {
+      const svcRecord = await this.repos.services.findById(appt.serviceId)
+      svcName = svcRecord?.name
+    } catch {
+      // non-blocking
     }
 
     // Publish appointment.cancelled domain event
@@ -171,19 +124,19 @@ export class AppointmentService {
         tenantId: appt.tenantId,
         type: 'appointment.cancelled',
         appointmentId: appt.id,
-        bookingReference: appt.bookingReference,
+        bookingReference: appt.bookingReference || bookingReference || '',
         customerId: appt.customerId,
         customerName: cust?.name || 'Customer',
         customerPhone: cust?.phone || '',
         customerEmail: cust?.email,
-        serviceName: svc?.name || 'Service',
+        serviceName: svcName || 'Service',
         appointmentDate: appt.appointmentDate,
         startTime: appt.startTime,
         cancelledBy,
         feePercent: feeCalc.feePercent,
         feeAmount: feeCalc.feeAmount,
         refundAmount: feeCalc.refundAmount,
-        reminderChannel: appt.reminderChannel || 'sms',
+        reminderChannel: appt.reminderChannel || 'none',
         salonName: salon?.name || 'Fade & Edge Barbershop',
       })
     } catch {
@@ -195,7 +148,8 @@ export class AppointmentService {
       feePercent: feeCalc.feePercent,
       feeAmount: feeCalc.feeAmount,
       refundAmount: feeCalc.refundAmount,
-      bookingReference: appt.bookingReference,
+      bookingReference: appt.bookingReference || bookingReference,
+      serviceName: svcName,
     }
   }
 
@@ -231,43 +185,8 @@ export class AppointmentService {
       return { error: 'That appointment time is no longer available.' }
     }
 
-    const oldDate = appt.appointmentDate
-    const oldTime = appt.startTime
-
     // Update time and date in-place
     const updated = await this.repos.appointments.updateDateTime(id, newDate, newTime)
-
-    // Publish appointment.rescheduled domain event
-    try {
-      const cust = await this.repos.customers.findById(appt.customerId)
-      const svc = await this.repos.services.findById(appt.serviceId)
-      const stf = appt.staffId ? await this.repos.staff.findById(appt.staffId) : null
-      const salon = await this.repos.salons.findByTenantId(appt.tenantId)
-
-      await eventBus.publish({
-        eventId: `evt-reschedule-${appt.id}-${Date.now()}`,
-        timestamp: new Date().toISOString(),
-        tenantId: appt.tenantId,
-        type: 'appointment.rescheduled',
-        appointmentId: appt.id,
-        bookingReference: appt.bookingReference,
-        customerId: appt.customerId,
-        customerName: cust?.name || 'Customer',
-        customerPhone: cust?.phone || '',
-        customerEmail: cust?.email,
-        serviceName: svc?.name || 'Service',
-        staffName: stf?.name,
-        oldDate,
-        oldTime,
-        newDate,
-        newTime,
-        reminderChannel: appt.reminderChannel || 'sms',
-        salonName: salon?.name || 'Fade & Edge Barbershop',
-        salonAddress: salon?.addressStreet ? `${salon.addressStreet}, ${salon.addressCity || ''}` : salon?.address,
-      })
-    } catch {
-      // Invariant: Notification failure must not affect reschedule status
-    }
 
     return { appointment: updated }
   }

@@ -1,7 +1,7 @@
 'use client'
 
 import React, { useState, useEffect, useRef } from "react"
-import { formatZAR } from "../domains/payments/money"
+import { formatZAR } from "@/domains/payments/money"
 import {
   BookingData,
 } from "./types"

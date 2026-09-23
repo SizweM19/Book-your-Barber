@@ -1,5 +1,5 @@
-import type { RepositoryContainer } from '@/infrastructure/repositories/container'
-import { repositories as defaultRepositories } from '@/infrastructure/repositories/container'
+import type { RepositoryContainer } from '@byb/database'
+import { repositories as defaultRepositories } from '@byb/database'
 
 export interface PlatformPlan {
   id: string

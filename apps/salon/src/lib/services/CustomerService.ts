@@ -1,6 +1,6 @@
-import type { RepositoryContainer } from '@/infrastructure/repositories/container'
-import { repositories as defaultRepositories } from '@/infrastructure/repositories/container'
-import type { CustomerEntity } from '@/application/repositories/interfaces'
+import type { RepositoryContainer } from '@byb/database'
+import { repositories as defaultRepositories } from '@byb/database'
+import type { CustomerEntity } from '@byb/database'
 
 export class CustomerService {
   constructor(private repos: RepositoryContainer = defaultRepositories) {}

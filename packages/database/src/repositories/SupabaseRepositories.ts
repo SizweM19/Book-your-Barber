@@ -17,15 +17,17 @@ import type {
   SalonSettingsRepository,
   SalonEntity,
   SalonRepository,
-  NotificationLogEntity,
   NotificationRepository,
-  NotificationTemplateEntity,
+  NotificationLogEntity,
   TemplateRepository,
+  NotificationTemplateEntity,
 } from './interfaces'
 import type {
   DomainPaymentRecord,
   DomainRefundRecord,
   DomainRefundStatus,
+} from '@byb/types'
+import type {
   CanonicalStaffWorkingHours,
   CanonicalScheduleBreak,
   CanonicalScheduleException,
@@ -366,6 +368,18 @@ export class SupabaseAppointmentRepository implements AppointmentRepository {
     return this.map(updated)
   }
 
+  async updatePaymentStatus(id: string, paymentStatus: AppointmentEntity['paymentStatus']): Promise<AppointmentEntity> {
+    const { data: updated, error } = await this.supabase
+      .from('appointments')
+      .update({ payment_status: paymentStatus })
+      .eq('id', id)
+      .select()
+      .single()
+
+    if (error) throw error
+    return this.map(updated)
+  }
+
   private map(row: any): AppointmentEntity {
     return {
       id: row.id,
@@ -394,6 +408,24 @@ export class SupabasePaymentRepository implements PaymentRepository {
 
   constructor(client?: any) {
     this.supabase = client || createBrowserSupabaseClient()
+  }
+
+
+  async findByIdempotencyKey(key: string): Promise<DomainPaymentRecord | null> {
+    const { data } = await this.supabase.from('payments').select('*').eq('idempotency_key', key).maybeSingle()
+    return data ? this.map(data) : null
+  }
+
+  async findByProviderReference(ref: string): Promise<DomainPaymentRecord | null> {
+    const { data } = await this.supabase.from('payments').select('*').eq('provider_reference', ref).maybeSingle()
+    return data ? this.map(data) : null
+  }
+
+  async listByTenant(tenantId: string, limit?: number): Promise<DomainPaymentRecord[]> {
+    let query = this.supabase.from('payments').select('*').eq('tenant_id', tenantId).order('recorded_at', { ascending: false })
+    if (limit) query = query.limit(limit)
+    const { data } = await query
+    return (data || []).map(this.map)
   }
 
   async findById(id: string): Promise<DomainPaymentRecord | null> {
@@ -439,6 +471,17 @@ export class SupabaseRefundRepository implements RefundRepository {
 
   constructor(client?: any) {
     this.supabase = client || createBrowserSupabaseClient()
+  }
+
+
+  async findByIdempotencyKey(key: string): Promise<DomainRefundRecord | null> {
+    const { data } = await this.supabase.from('refunds').select('*').eq('idempotency_key', key).maybeSingle()
+    return data ? this.map(data) : null
+  }
+
+  async listByAppointment(appointmentId: string): Promise<DomainRefundRecord[]> {
+    const { data } = await this.supabase.from('refunds').select('*').eq('appointment_id', appointmentId).order('requested_at', { ascending: false })
+    return (data || []).map(this.map)
   }
 
   async findById(id: string): Promise<DomainRefundRecord | null> {
@@ -877,6 +920,247 @@ export class SupabaseSalonRepository implements SalonRepository {
       active: row.active ?? true,
       createdAt: row.created_at || new Date().toISOString(),
       updatedAt: row.updated_at || new Date().toISOString(),
+    }
+  }
+}
+
+export class SupabaseNotificationRepository implements NotificationRepository {
+  private supabase: any
+
+  constructor(client?: any) {
+    this.supabase = client || createBrowserSupabaseClient()
+  }
+
+  async findById(id: string): Promise<NotificationLogEntity | null> {
+    const { data } = await this.supabase
+      .from('message_logs')
+      .select('*')
+      .eq('id', id)
+      .single()
+
+    return data ? this.map(data) : null
+  }
+
+  async findByIdempotencyKey(key: string): Promise<NotificationLogEntity | null> {
+    const { data } = await this.supabase
+      .from('message_logs')
+      .select('*')
+      .eq('idempotency_key', key)
+      .single()
+
+    return data ? this.map(data) : null
+  }
+
+  async listByAppointment(appointmentId: string): Promise<NotificationLogEntity[]> {
+    const { data } = await this.supabase
+      .from('message_logs')
+      .select('*')
+      .eq('appointment_id', appointmentId)
+      .order('created_at', { ascending: false })
+
+    return (data || []).map((row: any) => this.map(row))
+  }
+
+  async listByTenant(tenantId: string, limit = 100): Promise<NotificationLogEntity[]> {
+    const { data } = await this.supabase
+      .from('message_logs')
+      .select('*')
+      .eq('tenant_id', tenantId)
+      .order('created_at', { ascending: false })
+      .limit(limit)
+
+    return (data || []).map((row: any) => this.map(row))
+  }
+
+  async listPendingRetries(limit = 50): Promise<NotificationLogEntity[]> {
+    const now = new Date().toISOString()
+    const { data } = await this.supabase
+      .from('message_logs')
+      .select('*')
+      .in('status', ['pending', 'failed'])
+      .lte('next_retry_at', now)
+      .order('next_retry_at', { ascending: true })
+      .limit(limit)
+
+    return (data || []).map((row: any) => this.map(row))
+  }
+
+  async create(
+    data: Omit<NotificationLogEntity, 'id' | 'createdAt' | 'updatedAt'>
+  ): Promise<NotificationLogEntity> {
+    const row = {
+      tenant_id: data.tenantId,
+      appointment_id: data.appointmentId || null,
+      customer_id: data.customerId || null,
+      event_type: data.eventType,
+      channel: data.channel,
+      recipient: data.recipient,
+      subject: data.subject || null,
+      content: data.content,
+      status: data.status,
+      provider_name: data.providerName,
+      provider_message_id: data.providerMessageId || null,
+      idempotency_key: data.idempotencyKey || null,
+      retry_count: data.retryCount || 0,
+      max_retries: data.maxRetries || 3,
+      next_retry_at: data.nextRetryAt || null,
+      sent_at: data.sentAt || null,
+      delivered_at: data.deliveredAt || null,
+      fail_reason: data.failReason || null,
+      metadata: data.metadata || {},
+    }
+
+    const { data: created, error } = await this.supabase
+      .from('message_logs')
+      .insert(row)
+      .select()
+      .single()
+
+    if (error) {
+      throw new Error(`Failed to create notification log: ${error.message}`)
+    }
+
+    return this.map(created)
+  }
+
+  async updateStatus(
+    id: string,
+    params: {
+      status: NotificationLogEntity['status']
+      providerMessageId?: string
+      sentAt?: string
+      deliveredAt?: string
+      failReason?: string
+      retryCount?: number
+      nextRetryAt?: string
+    }
+  ): Promise<NotificationLogEntity> {
+    const updateData: any = {
+      status: params.status,
+      updated_at: new Date().toISOString(),
+    }
+
+    if (params.providerMessageId !== undefined) updateData.provider_message_id = params.providerMessageId
+    if (params.sentAt !== undefined) updateData.sent_at = params.sentAt
+    if (params.deliveredAt !== undefined) updateData.delivered_at = params.deliveredAt
+    if (params.failReason !== undefined) updateData.fail_reason = params.failReason
+    if (params.retryCount !== undefined) updateData.retry_count = params.retryCount
+    if (params.nextRetryAt !== undefined) updateData.next_retry_at = params.nextRetryAt
+
+    const { data, error } = await this.supabase
+      .from('message_logs')
+      .update(updateData)
+      .eq('id', id)
+      .select()
+      .single()
+
+    if (error) {
+      throw new Error(`Failed to update notification log status: ${error.message}`)
+    }
+
+    return this.map(data)
+  }
+
+  private map(row: any): NotificationLogEntity {
+    return {
+      id: row.id,
+      tenantId: row.tenant_id,
+      appointmentId: row.appointment_id || undefined,
+      customerId: row.customer_id || undefined,
+      eventType: row.event_type || 'booking_confirmed',
+      channel: row.channel,
+      recipient: row.recipient || '',
+      subject: row.subject || undefined,
+      content: row.content || '',
+      status: row.status,
+      providerName: row.provider_name || 'mock',
+      providerMessageId: row.provider_message_id || undefined,
+      idempotencyKey: row.idempotency_key || undefined,
+      retryCount: row.retry_count || 0,
+      maxRetries: row.max_retries || 3,
+      nextRetryAt: row.next_retry_at || undefined,
+      sentAt: row.sent_at || undefined,
+      deliveredAt: row.delivered_at || undefined,
+      failReason: row.fail_reason || undefined,
+      metadata: row.metadata || {},
+      createdAt: row.created_at,
+      updatedAt: row.updated_at || row.created_at,
+    }
+  }
+}
+
+export class SupabaseTemplateRepository implements TemplateRepository {
+  private supabase: any
+
+  constructor(client?: any) {
+    this.supabase = client || createBrowserSupabaseClient()
+  }
+
+  async findByTypeAndChannel(
+    tenantId: string,
+    templateType: string,
+    channel: 'whatsapp' | 'sms' | 'email'
+  ): Promise<NotificationTemplateEntity | null> {
+    const { data } = await this.supabase
+      .from('message_templates')
+      .select('*')
+      .eq('tenant_id', tenantId)
+      .eq('template_type', templateType)
+      .eq('channel', channel)
+      .eq('active', true)
+      .single()
+
+    return data ? this.map(data) : null
+  }
+
+  async listByTenant(tenantId: string): Promise<NotificationTemplateEntity[]> {
+    const { data } = await this.supabase
+      .from('message_templates')
+      .select('*')
+      .eq('tenant_id', tenantId)
+
+    return (data || []).map((row: any) => this.map(row))
+  }
+
+  async upsert(
+    data: Omit<NotificationTemplateEntity, 'id' | 'createdAt' | 'updatedAt'>
+  ): Promise<NotificationTemplateEntity> {
+    const row = {
+      tenant_id: data.tenantId,
+      template_type: data.templateType,
+      channel: data.channel,
+      subject: data.subject || null,
+      content: data.content,
+      whatsapp_template_name: data.whatsappTemplateName || null,
+      active: data.active ?? true,
+      updated_at: new Date().toISOString(),
+    }
+
+    const { data: upserted, error } = await this.supabase
+      .from('message_templates')
+      .upsert(row, { onConflict: 'tenant_id,template_type,channel' })
+      .select()
+      .single()
+
+    if (error) {
+      throw new Error(`Failed to upsert message template: ${error.message}`)
+    }
+
+    return this.map(upserted)
+  }
+
+  private map(row: any): NotificationTemplateEntity {
+    return {
+      id: row.id,
+      tenantId: row.tenant_id,
+      templateType: row.template_type,
+      channel: row.channel,
+      subject: row.subject || undefined,
+      content: row.content,
+      whatsappTemplateName: row.whatsapp_template_name || undefined,
+      active: row.active ?? true,
+      createdAt: row.created_at,
+      updatedAt: row.updated_at,
     }
   }
 }

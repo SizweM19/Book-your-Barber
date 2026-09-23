@@ -7,6 +7,7 @@ import {
 } from '@/domains/appointments/rules'
 import type { AppointmentEntity } from '@/application/repositories/interfaces'
 import { AvailabilityService } from './AvailabilityService'
+import { eventBus } from './EventBus'
 
 export class AppointmentService {
   private availability: AvailabilityService
@@ -38,16 +39,42 @@ export class AppointmentService {
 
   async cancelAppointment(
     id: string,
-    cancelledBy: 'customer' | 'salon'
+    cancelledBy: 'customer' | 'salon',
+    bookingReference?: string,
+    verificationContact?: string
   ): Promise<{
     appointment?: AppointmentEntity
     feePercent: number
     feeAmount: number
     refundAmount: number
+    bookingReference?: string
+    serviceName?: string
     error?: string
   }> {
-    const appt = await this.repos.appointments.findById(id)
+    let appt = id ? await this.repos.appointments.findById(id) : null
+    if (!appt && bookingReference && this.repos.appointments.findByReference) {
+      appt = await this.repos.appointments.findByReference(bookingReference)
+    }
     if (!appt) return { feePercent: 0, feeAmount: 0, refundAmount: 0, error: 'Appointment not found' }
+
+    if (verificationContact && cancelledBy === 'customer') {
+      const cust = await this.repos.customers.findById(appt.customerId)
+      if (cust) {
+        const cleanInput = verificationContact.trim().toLowerCase().replace(/[\s\-\(\)]/g, '')
+        const custPhone = cust.phone.replace(/[\s\-\(\)]/g, '')
+        const custEmail = cust.email?.toLowerCase() || ''
+        const matches =
+          (custPhone &&
+            (cleanInput.includes(custPhone) ||
+              custPhone.includes(cleanInput) ||
+              custPhone.endsWith(cleanInput) ||
+              cleanInput.endsWith(custPhone))) ||
+          (custEmail && custEmail === cleanInput)
+        if (!matches) {
+          return { feePercent: 0, feeAmount: 0, refundAmount: 0, error: 'The contact details do not match this booking.' }
+        }
+      }
+    }
 
     // Calculate cancellation fee using domain rules
     const apptDateTime = `${appt.appointmentDate}T${appt.startTime}:00`
@@ -76,11 +103,53 @@ export class AppointmentService {
       })
     }
 
+    // Lookup service name for return value (best-effort, outside try)
+    let svcName: string | undefined
+    try {
+      const svcRecord = await this.repos.services.findById(appt.serviceId)
+      svcName = svcRecord?.name
+    } catch {
+      // non-blocking
+    }
+
+    // Publish appointment.cancelled domain event
+    try {
+      const cust = await this.repos.customers.findById(appt.customerId)
+      const svc = await this.repos.services.findById(appt.serviceId)
+      const salon = await this.repos.salons.findByTenantId(appt.tenantId)
+
+      await eventBus.publish({
+        eventId: `evt-cancel-${appt.id}`,
+        timestamp: new Date().toISOString(),
+        tenantId: appt.tenantId,
+        type: 'appointment.cancelled',
+        appointmentId: appt.id,
+        bookingReference: appt.bookingReference || bookingReference || '',
+        customerId: appt.customerId,
+        customerName: cust?.name || 'Customer',
+        customerPhone: cust?.phone || '',
+        customerEmail: cust?.email,
+        serviceName: svcName || 'Service',
+        appointmentDate: appt.appointmentDate,
+        startTime: appt.startTime,
+        cancelledBy,
+        feePercent: feeCalc.feePercent,
+        feeAmount: feeCalc.feeAmount,
+        refundAmount: feeCalc.refundAmount,
+        reminderChannel: appt.reminderChannel || 'none',
+        salonName: salon?.name || 'Fade & Edge Barbershop',
+      })
+    } catch {
+      // Invariant: Notification failure must not affect cancellation status
+    }
+
     return {
       appointment: updated,
       feePercent: feeCalc.feePercent,
       feeAmount: feeCalc.feeAmount,
       refundAmount: feeCalc.refundAmount,
+      bookingReference: appt.bookingReference || bookingReference,
+      serviceName: svcName,
     }
   }
 

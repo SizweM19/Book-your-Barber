@@ -6,7 +6,7 @@ import {
   NotifStatusIcon, channelLabel, SearchBar, PrimaryBtn, SecondaryBtn, DangerBtn,
   BackBtn, EmptyState,
 } from "./shared"
-import { repositories } from "@/infrastructure/repositories/container"
+import { repositories } from "@byb/database"
 import { bookingService } from "@/application/services/BookingService"
 import { appointmentService } from "@/application/services/AppointmentService"
 import { availabilityService } from "@/application/services/AvailabilityService"

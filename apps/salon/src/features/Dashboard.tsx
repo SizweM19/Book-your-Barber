@@ -6,7 +6,7 @@ import {
 } from "./shared"
 import { salonOperationsFacade } from "@/application/facades/SalonOperationsFacade"
 import { useTenantContext } from "@/application/tenant"
-import type { AppointmentEntity, StaffEntity } from "@/application/repositories/interfaces"
+import type { AppointmentEntity, StaffEntity } from "@byb/database"
 
 interface Props {
   onNav: (v: OpsView) => void

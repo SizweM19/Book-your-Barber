@@ -182,7 +182,7 @@ export class PaymentService {
         method: input.method,
         remainingBalance,
         providerReference: input.providerReference,
-        reminderChannel: appt.reminderChannel,
+        reminderChannel: appt.reminderChannel || 'none',
         salonName: salon?.name || 'Fade & Edge Barbershop',
       })
     } catch {

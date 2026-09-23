@@ -3,7 +3,7 @@
 import React from 'react'
 import Link from 'next/link'
 import { usePathname, useRouter } from 'next/navigation'
-import { useAuth } from '@/application/auth'
+import { useAuth } from '@byb/auth'
 import { TenantProvider } from '@/application/tenant'
 
 const APP_NAV_ITEMS = [

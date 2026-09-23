@@ -1,6 +1,6 @@
 import React, { useState, useEffect } from "react"
 import type { OpsView } from "./types"
-import { repositories } from "@/infrastructure/repositories/container"
+import { repositories } from "@byb/database"
 import { useTenantContext } from "@/application/tenant"
 import {
   fmtR, Card, SectionTitle, ApptBadge, PayBadge,
@@ -320,7 +320,7 @@ export function CustomerProfileScreen({ customerId, onBack, onAppt, onNav }: {
       setEditPhone(dbCust.phone)
       setEditEmail(dbCust.email || "")
       setEditNotes(dbCust.notes || "")
-      setEditSegment(dbCust.segment)
+      setEditSegment(dbCust.segment || "regular")
 
       const appts = await repositories.appointments.listByTenant(dbCust.tenantId, 500)
       const myAppts = appts.filter(a => a.customerId === dbCust.id)

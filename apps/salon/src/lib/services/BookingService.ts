@@ -1,9 +1,10 @@
-import type { RepositoryContainer } from '@/infrastructure/repositories/container'
-import { repositories as defaultRepositories } from '@/infrastructure/repositories/container'
+import type { RepositoryContainer } from '@byb/database'
+import { repositories as defaultRepositories } from '@byb/database'
 import { generateBookingReference } from '@/domains/booking/reference'
-import type { AppointmentEntity, CustomerEntity } from '@/application/repositories/interfaces'
+import type { AppointmentEntity, CustomerEntity } from '@byb/database'
 import { AvailabilityService } from './AvailabilityService'
 import { CustomerService } from './CustomerService'
+import { eventBus } from './EventBus'
 
 export interface CreateBookingInput {
   tenantId: string
@@ -21,6 +22,7 @@ export interface CreateBookingInput {
   reminderChannel?: 'whatsapp' | 'sms' | 'email' | 'none'
   paymentMethod?: 'cash' | 'card' | 'yoco' | 'payshap' | 'other'
   bookingSource?: 'online' | 'qr' | 'manual'
+  providerReference?: string
   now?: Date
 }
 
@@ -141,6 +143,42 @@ export class BookingService {
       bookingSource: input.bookingSource || 'online',
       reminderChannel: input.reminderChannel || 'whatsapp',
     })
+
+    // 8. Publish appointment.booked domain event (Non-blocking: failures must never disrupt booking)
+    try {
+      const salon = await this.repos.salons.findByTenantId(input.tenantId)
+      const staffMember = resolvedStaffId ? await this.repos.staff.findById(resolvedStaffId) : null
+
+      await eventBus.publish({
+        eventId: `evt-book-${appointment.id}`,
+        timestamp: new Date().toISOString(),
+        tenantId: input.tenantId,
+        type: 'appointment.booked',
+        appointmentId: appointment.id,
+        bookingReference: appointment.bookingReference,
+        customerId: customer.id,
+        customerName: customer.name,
+        customerPhone: customer.phone,
+        customerEmail: customer.email,
+        serviceId: service.id,
+        serviceName: service.name,
+        staffId: appointment.staffId,
+        staffName: staffMember?.name,
+        appointmentDate: appointment.appointmentDate,
+        startTime: appointment.startTime,
+        durationMinutes: appointment.durationMinutes,
+        totalCharged: appointment.totalCharged,
+        totalPaid: appointment.totalPaid,
+        reminderChannel: appointment.reminderChannel || 'none',
+        bookingSource: appointment.bookingSource || 'online',
+        salonName: salon?.name || 'Fade & Edge Barbershop',
+        salonAddress: salon?.addressStreet ? `${salon.addressStreet}, ${salon.addressCity || ''}` : salon?.address,
+        salonPhone: salon?.phone,
+      })
+    } catch (err) {
+      console.error('[BookingService] Event publication error:', err)
+      // Intentionally suppressed - notification failure does not invalidate appointment
+    }
 
     return {
       appointment,

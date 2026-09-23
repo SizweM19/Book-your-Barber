@@ -2,7 +2,8 @@
  * Authentication and Multi-Tenant Domain Contracts
  */
 
-export type TenantRole = 'OWNER' | 'MANAGER'
+import type { TenantRole } from './tenants'
+export type { TenantRole }
 export type PlatformRole = 'PLATFORM_ADMIN'
 export type UserRole = TenantRole | PlatformRole
 export type AuthTenantStatus = 'active' | 'suspended' | 'pending'

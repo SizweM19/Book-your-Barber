@@ -1,9 +1,15 @@
 'use client'
 
 import React from "react"
-import { formatZAR } from "@/domains/payments/money"
 import { Step } from "./types"
 
+export function downloadIcsCalendar(
+  title: string,
+  description: string,
+  location: string,
+  dateStr: string,
+  timeStr: string,
+  durationMinutes: number = 45
 ) {
   if (!dateStr || !timeStr) return
   const [y, m, d] = dateStr.split("-").map(Number)
@@ -44,23 +50,67 @@ import { Step } from "./types"
   URL.revokeObjectURL(url)
 }
 
-// Replace these with API-driven values in production
-const MAX_ADVANCE_DAYS = 60      // how many days ahead customers may book
-const CLOSED_DAYS: number[] = [] // day-of-week indices (0=Sun … 6=Sat); empty = open every day
+export function getDaysInMonth(y: number, m: number) { return new Date(y, m + 1, 0).getDate() }
+export function getFirstDay(y: number, m: number)    { return new Date(y, m, 1).getDay()      }
 
-const SLOT_HOLD_SECONDS = 10 * 60 // 10-minute reservation window for online payments
+export function formatDateLong(s: string) {
+  return new Date(s + "T00:00:00").toLocaleDateString("en-ZA", { weekday:"long", day:"numeric", month:"long", year:"numeric" })
+}
+export function formatDateShort(s: string) {
+  return new Date(s + "T00:00:00").toLocaleDateString("en-ZA", { weekday:"short", day:"numeric", month:"short" })
+}
 
-// ─── MOCK DATA ────────────────────────────────────────────────────────────────
+export function fmtCard(v: string) {
+  return v.replace(/\D/g,"").slice(0,16).replace(/(.{4})/g,"$1 ").trim()
+}
+export function fmtExpiry(v: string) {
+  const n = v.replace(/\D/g,"").slice(0,4)
+  return n.length >= 3 ? n.slice(0,2) + "/" + n.slice(2) : n
+}
+export function fmtCountdown(secs: number) {
+  const m = Math.floor(secs / 60), s = secs % 60
+  return `${String(m).padStart(2,"0")}:${String(s).padStart(2,"0")}`
+}
 
-const SERVICES: Service[] = [
+// ─── SHARED COMPONENTS ────────────────────────────────────────────────────────
 
+export function StepHeader({ title, onBack }: { title: string; onBack: () => void }) {
+  return (
+    <div className="flex items-center gap-2 px-4 py-3.5 bg-white sticky top-0 z-10 border-b border-gray-50">
+      <button onClick={onBack} className="w-9 h-9 flex items-center justify-center rounded-full hover:bg-gray-100 transition-colors -ml-1 flex-shrink-0">
+        <svg width="19" height="19" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round">
+          <path d="M19 12H5M12 5l-7 7 7 7"/>
+        </svg>
+      </button>
+      <h2 className="font-semibold text-[15px] text-gray-900 tracking-tight">{title}</h2>
+    </div>
+  )
+}
+
+export function CtaBar({ label, onClick, disabled = false, danger = false }: {
+  label: string; onClick: () => void; disabled?: boolean; danger?: boolean
+}) {
+  return (
+    <div
+      className="sticky bottom-0 bg-white/95 backdrop-blur-sm border-t border-gray-100 px-4 pt-3 mt-auto safe-area-bottom"
+      style={{ paddingBottom: 'max(1.25rem, env(safe-area-inset-bottom))' }}
+    >
+      <button
+        onClick={onClick}
+        disabled={disabled}
+        className={`w-full py-[15px] rounded-2xl font-semibold text-[15px] transition-all duration-150 ${
+          disabled ? "bg-gray-100 text-gray-400 cursor-not-allowed"
+          : danger  ? "bg-red-600 text-white active:scale-[0.98]"
+          :           "bg-gray-900 text-white active:scale-[0.98]"
+        }`}
+      >
         {label}
       </button>
     </div>
   )
 }
 
-function DetailRow({ label, value, accent }: { label: string; value: string; accent?: boolean }) {
+export function DetailRow({ label, value, accent }: { label: string; value: string; accent?: boolean }) {
   return (
     <div className="flex justify-between items-center px-4 py-3 border-b border-gray-50 last:border-0">
       <span className="text-[13px] text-gray-500">{label}</span>
@@ -73,7 +123,7 @@ function DetailRow({ label, value, accent }: { label: string; value: string; acc
 
 const FLOW_STEPS: Step[] = ["salon","service","staff","date","time","info","reminder","summary","paymentMethod","payment","confirmed"]
 
-function ProgressBar({ step }: { step: Step }) {
+export function ProgressBar({ step }: { step: Step }) {
   const idx = FLOW_STEPS.indexOf(step)
   if (idx < 1) return null
   const pct = Math.round((idx / (FLOW_STEPS.length - 1)) * 100)
@@ -84,88 +134,30 @@ function ProgressBar({ step }: { step: Step }) {
   )
 }
 
-// ─── 1. SALON LANDING ─────────────────────────────────────────────────────────
-
-function SalonPage({ salon, services = SERVICES, onBook, onLookup }: {
-  salon?: SalonEntity | null
-  services?: Service[]
-  onBook: () => void
-  onLookup: () => void
+export function RefundBanner({
+  iconSvg,
+  title,
+  body,
+  ref: bookingRef,
+  accent = false,
+}: {
+  iconSvg: React.ReactNode
+  title: string
+  body: string
+  ref: string
+  accent?: boolean
 }) {
-  const salonName = salon?.name || SALON_NAME
-  const salonAddress = salon?.address || SALON_ADDRESS
-  const salonHours = salon?.openingHours || "08:00–18:00"
-  const serviceList = services && services.length > 0 ? services : SERVICES
-
   return (
-    <div className="flex flex-col min-h-full bg-white">
-      <div className="relative h-64 bg-gray-800 overflow-hidden flex-shrink-0">
-        <img
-          src="https://images.unsplash.com/photo-1503951914875-452162b0f3f1?w=800&h=520&fit=crop&auto=format"
-          alt={`${salonName} interior`}
-          className="w-full h-full object-cover opacity-75"
-        />
-        <div className="absolute inset-0 bg-gradient-to-t from-black/85 via-black/20 to-transparent" />
-        <div className="absolute bottom-0 left-0 right-0 p-5">
-          <div className="flex items-center gap-2 mb-1.5">
-            <span className="w-2 h-2 rounded-full bg-emerald-400 animate-pulse" />
-            <span className="text-emerald-400 text-xs font-semibold tracking-wide uppercase">Open now</span>
-          </div>
-          <h1 className="text-white text-[22px] font-bold leading-tight tracking-tight">{salonName}</h1>
-          <div className="flex items-center gap-3 mt-1.5">
-            <span className="text-white/70 text-sm">{salonAddress.split(",")[1]?.trim() || "De Waterkant, Cape Town"}</span>
-            <span className="text-white/30">·</span>
-            <span className="text-white/70 text-sm">Mon–Sat</span>
-          </div>
-        </div>
+    <div className="flex flex-col items-center justify-center min-h-full bg-white px-6 text-center">
+      <div className={`w-20 h-20 rounded-full flex items-center justify-center mb-6 anim-pop ${accent ? "bg-emerald-50 text-emerald-600" : "bg-amber-50 text-amber-600"}`}>
+        {iconSvg}
       </div>
-
-      <div className="flex gap-2 px-4 py-3.5 overflow-x-auto flex-shrink-0">
-        {[
-          { icon:"🕐", text: salonHours },
-          { icon:"📍", text: salonAddress.split(",")[1]?.trim() || "De Waterkant" },
-          { icon:"💳", text:"Card & cash" },
-        ].map(p => (
-          <span key={p.text} className="flex items-center gap-1.5 px-3 py-2 bg-gray-50 rounded-full text-[13px] text-gray-600 whitespace-nowrap flex-shrink-0 font-medium">
-            <span className="text-base">{p.icon}</span>{p.text}
-          </span>
-        ))}
+      <h2 className="text-[22px] font-black text-gray-900 mb-2 tracking-tight">{title}</h2>
+      <p className="text-[13px] text-gray-500 leading-relaxed mb-8">{body}</p>
+      <div className="w-full bg-gray-900 rounded-2xl p-4 text-left">
+        <p className="text-white/40 text-[11px] font-bold uppercase tracking-widest mb-2">Booking Reference</p>
+        <p className="text-white font-mono text-[15px] font-black tracking-wider">{bookingRef}</p>
       </div>
-
-      <div className="px-4 pb-4 flex-shrink-0">
-        <p className="text-[11px] font-bold uppercase tracking-widest text-gray-400 mb-3">Popular services</p>
-        <div className="divide-y divide-gray-50">
-          {serviceList.slice(0,4).map(s => (
-            <div key={s.id} className="flex justify-between items-center py-3">
-              <div>
-                <p className="text-[14px] font-medium text-gray-800">{s.name}</p>
-                <p className="text-[12px] text-gray-400 mt-0.5">{s.duration} min</p>
-
-          ))}
-        </div>
-      )}
-    </>
+    </div>
   )
 }
-
-// ─── ROOT WRAPPER ─────────────────────────────────────────────────────────────
-
-export default function App({ hideSwitcher = false }: { hideSwitcher?: boolean }) {
-  const [mode, setMode] = useState<"customer" | "ops">("customer")
-
-  return (
-    <>
-      {mode === "ops" ? <SalonOps /> : <CustomerApp />}
-      {!hideSwitcher && (
-        <button
-          onClick={() => setMode(m => m === "customer" ? "ops" : "customer")}
-          className="fixed bottom-5 left-4 z-50 px-3.5 py-2 bg-black/75 text-white text-[12px] font-semibold rounded-full backdrop-blur-sm shadow-lg hover:bg-black/90 transition-colors flex items-center gap-1.5"
-        >
-          {mode === "customer" ? "⚙️ Salon view" : "📱 Customer view"}
-        </button>
-      )}
-    </>
-  )
-}
-
-// ─── CUSTOMER BOOKING APP ─────────────────────────────────────────────────────

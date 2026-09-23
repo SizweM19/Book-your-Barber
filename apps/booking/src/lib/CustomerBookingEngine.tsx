@@ -216,8 +216,33 @@ export function CustomerApp({
   function jumpTo(s: Step) { setHistory([]); setStep(s) }
   function restart()        { setHistory([]); setBooking({}); setIsRescheduling(false); setStep("salon") }
 
-  async function handlePaymentSuccess() {
+  const [paymentError, setPaymentError] = useState<{ message: string; reference?: string } | null>(null)
+
+  async function handlePaymentSubmit(cardDetails: { cardNumber: string; name: string; expiry: string; cvv: string }) {
     if (!tenantId) return
+    const price = booking.service?.price ?? 0
+
+    // 1. Authorise online payment with gateway adapter
+    const intentResult = await paymentService.initiateOnlinePayment({
+      appointmentReference: `PENDING-${Date.now()}`,
+      amount: price,
+      customerName: cardDetails.name || booking.name || "Customer",
+      customerPhone: booking.phone || "",
+      customerEmail: booking.email || "",
+      cardNumber: cardDetails.cardNumber,
+      cvv: cardDetails.cvv,
+    })
+
+    if (!intentResult.success) {
+      setPaymentError({
+        message: intentResult.errorMessage || "Payment was declined by your bank or payment provider.",
+        reference: intentResult.transactionReference || "GATEWAY_DECLINED",
+      })
+      go("paymentFailed")
+      return
+    }
+
+    // 2. Create the booking atomically
     try {
       const result = await bookingService.createBooking({
         tenantId,
@@ -229,8 +254,11 @@ export function CustomerApp({
           name: booking.name || "Customer",
           phone: booking.phone || "0821234567",
           email: booking.email || "customer@example.com"
-        }
+        },
+        paymentMethod: "card",
+        providerReference: intentResult.transactionReference,
       })
+
       patch({
         reference: result.bookingReference,
         appointmentId: result.appointment.id,
@@ -241,7 +269,7 @@ export function CustomerApp({
       if (err?.message?.includes("no longer available") || err?.message?.includes("conflict")) {
         go("unavailable")
       } else {
-        go("paymentSuccessProcessing")
+        go("error")
       }
     }
   }
@@ -374,24 +402,20 @@ export function CustomerApp({
         <PaymentStep
           booking={booking}
           onBack={goBack}
-          onSuccess={handlePaymentSuccess}
-          onFail={() => go("paymentFailed")}
+          onSubmitPayment={handlePaymentSubmit}
           onHoldExpired={() => go("slotHoldExpired")}
         />
       )
       case "paymentSuccessProcessing": return (
         <PaymentSuccessProcessingStep onComplete={() => go("confirmed")} />
       )
-      case "paymentDuplicate": return (
-        <PaymentDuplicateStep onStartOver={() => go("date")} />
-      )
+      case "paymentDuplicate": return <PaymentDuplicateStep />
       case "paymentFailed":    return (
         <PaymentFailedStep
           onRetry={() => go("payment")}
           onBack={() => go("paymentMethod")}
-          onChangeTime={() => go("date")}
-          errorMessage={(booking as any).paymentError?.message}
-          errorReference={(booking as any).paymentError?.reference}
+          errorMessage={paymentError?.message}
+          errorReference={paymentError?.reference}
         />
       )
       case "confirmed": return (
@@ -559,7 +583,6 @@ export function CustomerApp({
           {renderStep()}
         </div>
       </div>
-      <DemoNav current={step} onJump={jumpTo} />
     </div>
   )
 }

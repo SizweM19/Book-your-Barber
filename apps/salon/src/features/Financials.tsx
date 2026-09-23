@@ -5,9 +5,9 @@ import {
   fmtR, Card, SectionTitle, OpsDetailRow, SearchBar, PrimaryBtn,
   SecondaryBtn, DangerBtn, BackBtn, EmptyState, PayBadge,
 } from "./shared"
-import { repositories } from "@/infrastructure/repositories/container"
+import { repositories } from "@byb/database"
 import { useTenantContext } from "@/application/tenant"
-import type { ExpenseEntity, DomainRefundRecord } from "@/application/repositories/interfaces"
+import type { ExpenseEntity, DomainRefundRecord } from "@byb/database"
 
 // ─── LOCAL PRIMITIVES ─────────────────────────────────────────────────────────
 

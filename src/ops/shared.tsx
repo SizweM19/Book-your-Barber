@@ -13,6 +13,7 @@ export function statusConfig(s: AppointmentStatus) {
   const map = {
     booked:     { label:"Booked",      bg:"bg-blue-50",   text:"text-blue-700",   dot:"bg-blue-400"   },
     confirmed:  { label:"Confirmed",   bg:"bg-indigo-50", text:"text-indigo-700", dot:"bg-indigo-400" },
+    arrived:    { label:"Arrived",     bg:"bg-teal-50",   text:"text-teal-700",   dot:"bg-teal-400"   },
     inProgress: { label:"In progress", bg:"bg-amber-50",  text:"text-amber-700",  dot:"bg-amber-400"  },
     completed:  { label:"Completed",   bg:"bg-emerald-50",text:"text-emerald-700",dot:"bg-emerald-500" },
     cancelled:  { label:"Cancelled",   bg:"bg-gray-100",  text:"text-gray-500",   dot:"bg-gray-400"   },
@@ -29,6 +30,13 @@ export function payConfig(s: PaymentStatus) {
     refundProcessing:{ label:"Refunding",   bg:"bg-amber-50",  text:"text-amber-700"   },
     refunded:        { label:"Refunded",    bg:"bg-gray-100",  text:"text-gray-500"    },
     paymentFailed:   { label:"Pay failed",  bg:"bg-red-100",   text:"text-red-700"     },
+    unpaid:          { label:"Unpaid",       bg:"bg-red-50",    text:"text-red-600"     },
+    deposit_paid:    { label:"Deposit Paid", bg:"bg-blue-50",   text:"text-blue-700"    },
+    partial:         { label:"Part-paid",    bg:"bg-amber-50",  text:"text-amber-700"   },
+    paid:            { label:"Paid",         bg:"bg-emerald-50",text:"text-emerald-700" },
+    refundProcessing:{ label:"Refunding",    bg:"bg-amber-50",  text:"text-amber-700"   },
+    refunded:        { label:"Refunded",     bg:"bg-gray-100",  text:"text-gray-500"    },
+    paymentFailed:   { label:"Pay failed",   bg:"bg-red-100",   text:"text-red-700"     },
   }
   return map[s]
 }

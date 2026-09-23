@@ -3,7 +3,7 @@
 import React, { useState } from 'react'
 import Link from 'next/link'
 import { useRouter } from 'next/navigation'
-import { authService } from '@/application/auth'
+import { authService } from '@byb/auth'
 
 export default function ResetPasswordPage() {
   const router = useRouter()

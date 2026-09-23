@@ -57,6 +57,7 @@ export interface PaymentIntentRequest {
   customerPhone?: string
   cardNumber?: string
   cvv?: string
+  expiry?: string
   metadata?: Record<string, any>
 }
 

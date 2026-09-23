@@ -1,8 +1,8 @@
 import React, { useState, useEffect } from "react"
 import type { OpsView } from "./types"
-import { repositories } from "@/infrastructure/repositories/container"
+import { repositories } from "@byb/database"
 import { useTenantContext } from "@/application/tenant"
-import type { StaffEntity, ServiceEntity } from "@/application/repositories/interfaces"
+import type { StaffEntity, ServiceEntity } from "@byb/database"
 import { fmtR, Card, SectionTitle, OpsDetailRow, PrimaryBtn, SecondaryBtn, BackBtn, EmptyState } from "./shared"
 
 // ─── STAFF LIST ───────────────────────────────────────────────────────────────

@@ -1,18 +1,100 @@
 'use client'
 
 import React, { useState } from "react"
-import type { SalonEntity } from "@byb/database"
-import { formatZAR } from "@/domains/payments/money"
+import type { SalonEntity } from "@/application/repositories/interfaces"
 import {
-  Service, StaffMember, StaffSlot,
-  SERVICES, STAFF, MONTHS, DAYS_SHORT,
-  SALON_NAME, SALON_ADDRESS, SALON_MAPS_URL, SALON_PHONE
+  Service, StaffMember,
 } from "./types"
 import {
-  StepHeader, CtaBar, DetailRow,
-  getDaysInMonth, getFirstDay, formatDateShort
+  SERVICES, STAFF, MONTHS, DAYS_SHORT,
+  SALON_NAME, SALON_ADDRESS,
+  MAX_ADVANCE_DAYS, CLOSED_DAYS
+} from "./constants"
+import {
+  StepHeader, CtaBar,
+  getDaysInMonth, getFirstDay, formatDateLong
 } from "./shared"
 
+// ─── 1. SALON PAGE ────────────────────────────────────────────────────────────
+
+export function SalonPage({ salon, services = SERVICES, onBook, onLookup }: {
+  salon?: SalonEntity | null
+  services?: Service[]
+  onBook: () => void
+  onLookup: () => void
+}) {
+  const salonName = salon?.name || SALON_NAME
+  const salonAddress = salon?.address || SALON_ADDRESS
+  const salonHours = salon?.openingHours || "08:00–18:00"
+  const serviceList = services && services.length > 0 ? services : SERVICES
+
+  return (
+    <div className="flex flex-col min-h-full bg-white">
+      <div className="relative h-64 bg-gray-800 overflow-hidden flex-shrink-0">
+        <img
+          src="https://images.unsplash.com/photo-1503951914875-452162b0f3f1?w=800&h=520&fit=crop&auto=format"
+          alt={`${salonName} interior`}
+          className="w-full h-full object-cover opacity-75"
+        />
+        <div className="absolute inset-0 bg-gradient-to-t from-black/85 via-black/20 to-transparent" />
+        <div className="absolute bottom-0 left-0 right-0 p-5">
+          <div className="flex items-center gap-2 mb-1.5">
+            <span className="w-2 h-2 rounded-full bg-emerald-400 animate-pulse" />
+            <span className="text-emerald-400 text-xs font-semibold tracking-wide uppercase">Open now</span>
+          </div>
+          <h1 className="text-white text-[22px] font-bold leading-tight tracking-tight">{salonName}</h1>
+          <div className="flex items-center gap-3 mt-1.5">
+            <span className="text-white/70 text-sm">{salonAddress.split(",")[1]?.trim() || "De Waterkant, Cape Town"}</span>
+            <span className="text-white/30">·</span>
+            <span className="text-white/70 text-sm">Mon–Sat</span>
+          </div>
+        </div>
+      </div>
+
+      <div className="flex gap-2 px-4 py-3.5 overflow-x-auto flex-shrink-0">
+        {[
+          {
+            icon: (
+              <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+                <circle cx="12" cy="12" r="10" />
+                <polyline points="12 6 12 12 16 14" />
+              </svg>
+            ),
+            text: salonHours,
+          },
+          {
+            icon: (
+              <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+                <path d="M21 10c0 7-9 13-9 13s-9-6-9-13a9 9 0 0 1 18 0z" />
+                <circle cx="12" cy="10" r="3" />
+              </svg>
+            ),
+            text: salonAddress.split(",")[1]?.trim() || "De Waterkant",
+          },
+          {
+            icon: (
+              <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+                <rect x="2" y="5" width="20" height="14" rx="2" />
+                <line x1="2" y1="10" x2="22" y2="10" />
+              </svg>
+            ),
+            text: "Card & cash",
+          },
+        ].map(p => (
+          <span key={p.text} className="flex items-center gap-1.5 px-3 py-1.5 bg-gray-50 border border-gray-200 rounded-sm text-[12px] text-gray-700 whitespace-nowrap flex-shrink-0 font-medium">
+            <span className="text-gray-500">{p.icon}</span>{p.text}
+          </span>
+        ))}
+      </div>
+
+      <div className="px-4 pb-4 flex-shrink-0">
+        <p className="text-[11px] font-bold uppercase tracking-widest text-gray-400 mb-3">Popular services</p>
+        <div className="divide-y divide-gray-50">
+          {serviceList.slice(0,4).map(s => (
+            <div key={s.id} className="flex justify-between items-center py-3">
+              <div>
+                <p className="text-[14px] font-medium text-gray-800">{s.name}</p>
+                <p className="text-[12px] text-gray-400 mt-0.5">{s.duration} min</p>
               </div>
               <span className="text-[14px] font-semibold text-gray-700">R{s.price}</span>
             </div>
@@ -47,7 +129,7 @@ import {
 
 // ─── 2. SERVICE SELECTION ─────────────────────────────────────────────────────
 
-function ServiceStep({ services = SERVICES, selected, onSelect, onBack, onNext }: {
+export function ServiceStep({ services = SERVICES, selected, onSelect, onBack, onNext }: {
   services?: Service[]; selected?: Service; onSelect: (s: Service) => void; onBack: () => void; onNext: () => void
 }) {
   const list = services && services.length > 0 ? services : SERVICES
@@ -92,13 +174,13 @@ function ServiceStep({ services = SERVICES, selected, onSelect, onBack, onNext }
 
 // ─── 3. STAFF SELECTION ──────────────────────────────────────────────────────
 
-function StaffStep({ staffList = STAFF, selected, onSelect, onBack, onNext }: {
+export function StaffStep({ staffList, selected, onSelect, onBack, onNext }: {
   staffList?: StaffMember[]
   selected?: StaffMember | null
   onSelect: (s: StaffMember | null) => void
   onBack: () => void; onNext: () => void
 }) {
-  const list = staffList && staffList.length > 0 ? staffList : STAFF
+  const list = staffList !== undefined ? staffList : STAFF
   const anySelected  = selected === null
   const hasSelection = selected !== undefined
   return (
@@ -111,7 +193,14 @@ function StaffStep({ staffList = STAFF, selected, onSelect, onBack, onNext }: {
             anySelected ? "border-gray-900 bg-gray-900" : "border-gray-100 bg-white hover:border-gray-200"
           }`}
         >
-          <div className={`w-14 h-14 rounded-full flex items-center justify-center text-2xl flex-shrink-0 ${anySelected ? "bg-white/10" : "bg-gray-100"}`}>👥</div>
+          <div className={`w-14 h-14 rounded-full flex items-center justify-center flex-shrink-0 ${anySelected ? "bg-white/10 text-white" : "bg-gray-100 text-gray-700"}`}>
+            <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+              <path d="M17 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2" />
+              <circle cx="9" cy="7" r="4" />
+              <path d="M23 21v-2a4 4 0 0 0-3-3.87" />
+              <path d="M16 3.13a4 4 0 0 1 0 7.75" />
+            </svg>
+          </div>
           <div>
             <p className={`font-semibold text-[15px] ${anySelected ? "text-white" : "text-gray-900"}`}>Any Available</p>
             <p className={`text-[12px] mt-0.5 leading-snug ${anySelected ? "text-white/65" : "text-gray-500"}`}>First available barber — you get the next open slot sooner</p>
@@ -121,7 +210,7 @@ function StaffStep({ staffList = STAFF, selected, onSelect, onBack, onNext }: {
           </div>
         </button>
 
-        <div className="grid grid-cols-2 gap-3">
+        <div className="grid grid-cols-1 sm:grid-cols-2 gap-2.5 sm:gap-3">
           {list.map(member => {
             const active = selected?.id === member.id
             const photoSrc = member.photo && member.photo.startsWith("http")
@@ -131,18 +220,20 @@ function StaffStep({ staffList = STAFF, selected, onSelect, onBack, onNext }: {
               <button
                 key={member.id}
                 onClick={() => onSelect(member)}
-                className={`flex flex-col p-4 rounded-2xl border-2 text-left transition-all duration-150 ${
+                className={`flex items-center sm:flex-col p-3 sm:p-4 rounded-2xl border-2 text-left transition-all duration-150 gap-3 sm:gap-0 ${
                   active ? "border-gray-900 bg-gray-900" : "border-gray-100 bg-white hover:border-gray-200"
                 }`}
               >
                 <img
                   src={photoSrc}
                   alt={member.name}
-                  className="w-14 h-14 rounded-full object-cover mb-3 bg-gray-200"
+                  className="w-12 h-12 sm:w-14 sm:h-14 rounded-full object-cover sm:mb-3 bg-gray-200 flex-shrink-0"
                 />
-                <p className={`font-semibold text-[13px] leading-snug ${active ? "text-white" : "text-gray-900"}`}>{member.name}</p>
-                <p className={`text-[11px] mt-0.5 ${active ? "text-white/65" : "text-gray-500"}`}>{member.role}</p>
-                <p className={`text-[11px] mt-2 ${active ? "text-white/55" : "text-gray-400"}`}>Next: {member.nextAvailable}</p>
+                <div className="min-w-0 flex-1">
+                  <p className={`font-semibold text-[13px] sm:text-[14px] leading-snug truncate ${active ? "text-white" : "text-gray-900"}`}>{member.name}</p>
+                  <p className={`text-[11px] mt-0.5 truncate ${active ? "text-white/65" : "text-gray-500"}`}>{member.role}</p>
+                  <p className={`text-[11px] mt-1 sm:mt-2 ${active ? "text-white/55" : "text-gray-400"}`}>Next: {member.nextAvailable}</p>
+                </div>
               </button>
             )
           })}
@@ -155,7 +246,7 @@ function StaffStep({ staffList = STAFF, selected, onSelect, onBack, onNext }: {
 
 // ─── 4. DATE SELECTION ────────────────────────────────────────────────────────
 
-function DateStep({ selected, onSelect, onBack, onNext }: {
+export function DateStep({ selected, onSelect, onBack, onNext }: {
   selected?: string; onSelect: (d: string) => void; onBack: () => void; onNext: () => void
 }) {
   const today = new Date()
@@ -188,7 +279,7 @@ function DateStep({ selected, onSelect, onBack, onNext }: {
   return (
     <div className="flex flex-col min-h-full bg-white">
       <StepHeader title="Choose a date" onBack={onBack} />
-      <div className="flex-1 px-4 py-4">
+      <div className="flex-1 px-2.5 xs:px-4 py-4">
         <div className="flex items-center justify-between mb-5">
           <button onClick={prevMonth} disabled={isPrevDisabled}
             className={`w-10 h-10 flex items-center justify-center rounded-full transition-colors ${isPrevDisabled ? "text-gray-200 cursor-not-allowed" : "hover:bg-gray-100 text-gray-600"}`}>
@@ -201,13 +292,13 @@ function DateStep({ selected, onSelect, onBack, onNext }: {
           </button>
         </div>
 
-        <div className="grid grid-cols-7 mb-1">
+        <div className="grid grid-cols-7 gap-0.5 xs:gap-1 mb-1">
           {DAYS_SHORT.map(d => (
-            <div key={d} className="text-center text-[11px] font-bold py-1.5 text-gray-400">{d}</div>
+            <div key={d} className="text-center text-[11px] font-bold py-1 text-gray-400">{d}</div>
           ))}
         </div>
 
-        <div className="grid grid-cols-7">
+        <div className="grid grid-cols-7 gap-0.5 xs:gap-1">
           {Array(getFirstDay(vy, vm)).fill(null).map((_, i) => <div key={`b${i}`} />)}
           {Array.from({length: getDaysInMonth(vy, vm)}, (_, i) => i + 1).map(day => {
             const dateStr  = ds(day)
@@ -219,7 +310,7 @@ function DateStep({ selected, onSelect, onBack, onNext }: {
                 key={day}
                 onClick={() => !disabled && onSelect(dateStr)}
                 disabled={disabled}
-                className={`aspect-square flex items-center justify-center text-[14px] font-medium rounded-full mx-0.5 my-0.5 transition-all duration-150 ${
+                className={`aspect-square min-h-[38px] xs:min-h-[42px] flex items-center justify-center text-[13px] xs:text-[14px] font-medium rounded-full transition-all duration-150 ${
                   isSelected ? "bg-gray-900 text-white font-bold"
                   : disabled  ? "text-gray-200 cursor-not-allowed"
                   : isToday   ? "text-gray-900 underline underline-offset-2 hover:bg-gray-50"
@@ -247,7 +338,7 @@ function DateStep({ selected, onSelect, onBack, onNext }: {
 
 // ─── 5. TIME SLOTS ────────────────────────────────────────────────────────────
 
-function SlotGroup({ label, slots, selected, onSelect }: {
+export function SlotGroup({ label, slots, selected, onSelect }: {
   label: string; slots: { time: string; available: boolean }[]; selected?: string; onSelect: (t: string) => void
 }) {
   return (
@@ -261,7 +352,7 @@ function SlotGroup({ label, slots, selected, onSelect }: {
               key={s.time}
               onClick={() => s.available && onSelect(s.time)}
               disabled={!s.available}
-              className={`py-[13px] rounded-xl text-[13px] font-semibold border-2 transition-all duration-150 ${
+              className={`py-2.5 xs:py-3 rounded-xl text-[13px] font-semibold border-2 transition-all duration-150 ${
                 active       ? "border-gray-900 bg-gray-900 text-white"
                 : !s.available ? "border-gray-100 text-gray-300 line-through cursor-not-allowed bg-gray-50"
                 :                "border-gray-200 text-gray-700 hover:border-gray-400 bg-white"
@@ -276,7 +367,7 @@ function SlotGroup({ label, slots, selected, onSelect }: {
   )
 }
 
-function TimeStep({ slots = [], loading = false, selected, date, onSelect, onBack, onNext }: {
+export function TimeStep({ slots = [], loading = false, selected, date, onSelect, onBack, onNext }: {
   slots?: { time: string; available: boolean }[]
   loading?: boolean
   selected?: string; date?: string; onSelect: (t: string) => void; onBack: () => void; onNext: () => void
@@ -317,93 +408,3 @@ function TimeStep({ slots = [], loading = false, selected, date, onSelect, onBac
     </div>
   )
 }
-
-// ─── 6. CUSTOMER INFO ─────────────────────────────────────────────────────────
-
-function InfoStep({ data, onChange, onBack, onNext }: {
-  data: { name?: string; phone?: string; email?: string }
-  onChange: (k: "name" | "phone" | "email", v: string) => void
-  onBack: () => void; onNext: () => void
-}) {
-  const valid = (data.name?.trim().length ?? 0) > 1
-    && (data.phone?.trim().length ?? 0) >= 9
-    && (data.email ?? "").includes("@") && (data.email ?? "").includes(".")
-
-  const inputCls = "w-full px-4 py-[13px] rounded-xl border-2 border-gray-200 text-gray-900 placeholder-gray-300 focus:border-gray-900 outline-none transition-colors text-[14px] bg-white"
-
-  return (
-    <div className="flex flex-col min-h-full bg-white">
-      <StepHeader title="Your details" onBack={onBack} />
-      <div className="flex-1 px-4 py-4 space-y-4">
-        <p className="text-[13px] text-gray-500 leading-relaxed pb-1">No account created. Your details are used only for this booking and your reminder.</p>
-
-        <div>
-          <label className="block text-[11px] font-bold uppercase tracking-widest text-gray-400 mb-2">Full name</label>
-          <input type="text" autoComplete="name" value={data.name ?? ""} onChange={e => onChange("name", e.target.value)} placeholder="e.g. Sipho Mthembu" className={inputCls} />
-        </div>
-
-        <div>
-          <label className="block text-[11px] font-bold uppercase tracking-widest text-gray-400 mb-2">Phone number</label>
-          <div className="flex gap-2">
-            <div className="flex items-center px-3.5 py-[13px] rounded-xl border-2 border-gray-200 bg-gray-50 text-[13px] text-gray-600 whitespace-nowrap font-medium flex-shrink-0">
-              🇿🇦 +27
-            </div>
-            <input type="tel" inputMode="numeric" autoComplete="tel" value={data.phone ?? ""} onChange={e => onChange("phone", e.target.value.replace(/\D/g,""))} placeholder="82 123 4567" className={`flex-1 ${inputCls}`} />
-          </div>
-        </div>
-
-        <div>
-          <label className="block text-[11px] font-bold uppercase tracking-widest text-gray-400 mb-2">Email address</label>
-          <input type="email" autoComplete="email" value={data.email ?? ""} onChange={e => onChange("email", e.target.value)} placeholder="sipho@gmail.com" className={inputCls} />
-        </div>
-
-        <div className="flex items-start gap-3 p-3.5 bg-gray-50 rounded-xl">
-          <span className="text-gray-400 text-lg leading-none mt-0.5 flex-shrink-0">🔒</span>
-          <p className="text-[12px] text-gray-500 leading-relaxed">We never store your card details or create an account. Your info stays private.</p>
-        </div>
-      </div>
-      <CtaBar label="Continue" onClick={onNext} disabled={!valid} />
-    </div>
-  )
-}
-
-// ─── 7. REMINDER CHANNEL ─────────────────────────────────────────────────────
-
-function ReminderStep({ selected, onSelect, onBack, onNext }: {
-  selected?: string; onSelect: (r: "whatsapp" | "sms" | "email" | "none") => void; onBack: () => void; onNext: () => void
-}) {
-  return (
-    <div className="flex flex-col min-h-full bg-white">
-      <StepHeader title="Reminder preference" onBack={onBack} />
-      <div className="flex-1 px-4 py-4">
-        <p className="text-[13px] text-gray-500 mb-5 leading-relaxed">We send one reminder 24 hours before your appointment. Choose your preferred channel.</p>
-        <div className="space-y-2.5">
-          {REMINDER_OPTIONS.map(opt => {
-            const active = selected === opt.id
-            return (
-              <button key={opt.id} onClick={() => onSelect(opt.id)}
-                className={`w-full flex items-center gap-4 p-4 rounded-2xl border-2 text-left transition-all duration-150 ${
-                  active ? "border-gray-900 bg-gray-900" : "border-gray-100 bg-white hover:border-gray-200"
-                }`}
-              >
-                <span className="text-2xl w-9 text-center flex-shrink-0">{opt.icon}</span>
-                <div className="flex-1 min-w-0">
-                  <div className="flex items-center gap-2 flex-wrap">
-                    <p className={`font-semibold text-[14px] ${active ? "text-white" : "text-gray-900"}`}>{opt.label}</p>
-                    {opt.badge && (
-                      <span className={`text-[11px] px-2 py-0.5 rounded-full font-bold tracking-wide ${active ? "bg-white/15 text-white" : "bg-emerald-100 text-emerald-700"}`}>{opt.badge}</span>
-                    )}
-                  </div>
-                  <p className={`text-[12px] mt-0.5 ${active ? "text-white/65" : "text-gray-500"}`}>{opt.desc}</p>
-                </div>
-                <div className={`w-5 h-5 rounded-full border-2 flex items-center justify-center flex-shrink-0 transition-colors ${active ? "border-white bg-white" : "border-gray-300"}`}>
-                  {active && <div className="w-2.5 h-2.5 rounded-full bg-gray-900" />}
-                </div>
-              </button>
-            )
-          })}
-        </div>
-      </div>
-      <CtaBar label="Continue" onClick={onNext} disabled={!selected} />
-    </div>
-  )

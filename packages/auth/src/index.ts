@@ -1,2 +1,2 @@
-export * from './context/index.js'
-export * from './rbac/index.js'
+export * from './context/index'
+export * from './rbac/index'

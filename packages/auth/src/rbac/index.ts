@@ -1,4 +1,4 @@
-import type { AuthUser, TenantRole } from '@/domains/auth/types'
+import type { AuthUser, TenantRole } from '@byb/types'
 
 export function isPlatformAdmin(user: AuthUser | null): boolean {
   if (!user) return false

@@ -12,6 +12,7 @@ export type TransactionPaymentStatus = 'pending' | 'processing' | 'successful' |
 
 export type AppointmentPaymentStatus =
   | 'unpaid'
+  | 'deposit_paid'
   | 'partial'
   | 'paid'
   | 'refundProcessing'
@@ -42,7 +43,8 @@ const VALID_REFUND_TRANSITIONS: Record<DomainRefundStatus, DomainRefundStatus[]>
 }
 
 const VALID_APPOINTMENT_PAYMENT_TRANSITIONS: Record<AppointmentPaymentStatus, AppointmentPaymentStatus[]> = {
-  unpaid: ['partial', 'paid', 'paymentFailed'],
+  unpaid: ['partial', 'deposit_paid', 'paid', 'paymentFailed'],
+  deposit_paid: ['partial', 'paid', 'refundProcessing'],
   partial: ['partial', 'paid', 'refundProcessing'],
   paid: ['refundProcessing'],
   refundProcessing: ['refunded', 'paid', 'partial'],
