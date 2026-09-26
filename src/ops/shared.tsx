@@ -24,12 +24,6 @@ export function statusConfig(s: AppointmentStatus) {
 
 export function payConfig(s: PaymentStatus) {
   const map = {
-    unpaid:          { label:"Unpaid",      bg:"bg-red-50",    text:"text-red-600"     },
-    partial:         { label:"Part-paid",   bg:"bg-amber-50",  text:"text-amber-700"   },
-    paid:            { label:"Paid",        bg:"bg-emerald-50",text:"text-emerald-700" },
-    refundProcessing:{ label:"Refunding",   bg:"bg-amber-50",  text:"text-amber-700"   },
-    refunded:        { label:"Refunded",    bg:"bg-gray-100",  text:"text-gray-500"    },
-    paymentFailed:   { label:"Pay failed",  bg:"bg-red-100",   text:"text-red-700"     },
     unpaid:          { label:"Unpaid",       bg:"bg-red-50",    text:"text-red-600"     },
     deposit_paid:    { label:"Deposit Paid", bg:"bg-blue-50",   text:"text-blue-700"    },
     partial:         { label:"Part-paid",    bg:"bg-amber-50",  text:"text-amber-700"   },
