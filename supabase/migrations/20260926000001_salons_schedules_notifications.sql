@@ -3,10 +3,10 @@
 -- Migration: 20260926000001_salons_schedules_notifications.sql
 -- ============================================================================
 
--- 1. SALONS view (maps tenants to the 'salons' name used in repositories)
---    Many repository queries expect a 'salons' table — this creates a view
---    aliasing tenants so existing queries work without changing the schema.
-CREATE OR REPLACE VIEW salons AS
+-- 1. SALONS view (maps tenants to the salons name used in repositories)
+CREATE OR REPLACE VIEW public.salons
+  WITH (security_invoker = on)
+AS
   SELECT
     id,
     name,
@@ -19,11 +19,12 @@ CREATE OR REPLACE VIEW salons AS
     status,
     created_at,
     updated_at
-  FROM tenants;
+  FROM public.tenants;
 
--- 2. SCHEDULES (unified schedule view combining staff_schedules)
---    Repositories query 'schedules' table — create as alias view.
-CREATE OR REPLACE VIEW schedules AS
+-- 2. SCHEDULES view (alias for staff_schedules)
+CREATE OR REPLACE VIEW public.schedules
+  WITH (security_invoker = on)
+AS
   SELECT
     ss.id,
     ss.tenant_id,
@@ -32,10 +33,12 @@ CREATE OR REPLACE VIEW schedules AS
     ss.start_time,
     ss.end_time,
     ss.is_working
-  FROM staff_schedules ss;
+  FROM public.staff_schedules ss;
 
--- 3. NOTIFICATIONS (alias for message_logs, used by NotificationRepository)
-CREATE OR REPLACE VIEW notifications AS
+-- 3. NOTIFICATIONS view (alias for message_logs)
+CREATE OR REPLACE VIEW public.notifications
+  WITH (security_invoker = on)
+AS
   SELECT
     ml.id,
     ml.tenant_id,
@@ -46,9 +49,8 @@ CREATE OR REPLACE VIEW notifications AS
     ml.sent_at,
     ml.fail_reason,
     ml.created_at
-  FROM message_logs ml;
+  FROM public.message_logs ml;
 
--- Grant read access on the views to the authenticated and anon roles
-GRANT SELECT ON salons TO authenticated, anon;
-GRANT SELECT ON schedules TO authenticated, anon;
-GRANT SELECT ON notifications TO authenticated, anon;
+GRANT SELECT ON public.salons TO authenticated, anon;
+GRANT SELECT ON public.schedules TO authenticated, anon;
+GRANT SELECT ON public.notifications TO authenticated, anon;
