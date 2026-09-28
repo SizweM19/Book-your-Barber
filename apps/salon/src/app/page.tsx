@@ -43,7 +43,12 @@ export default function HomePage() {
             href="/book/fade-and-edge"
             className="flex flex-col items-start p-6 bg-gray-900 text-white rounded-3xl hover:bg-gray-800 transition-all shadow-lg hover:shadow-xl text-left group"
           >
-            <span className="text-2xl mb-3">📱</span>
+            <div className="w-10 h-10 rounded-xl bg-white/10 flex items-center justify-center text-white mb-3">
+              <svg className="w-5 h-5" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+                <rect x="5" y="2" width="14" height="20" rx="2" ry="2" />
+                <line x1="12" y1="18" x2="12.01" y2="18" />
+              </svg>
+            </div>
             <span className="text-xs font-bold text-gray-400 uppercase tracking-wider">Customer Experience</span>
             <span className="text-lg font-black text-white mt-1 group-hover:translate-x-0.5 transition-transform">
               Book at Fade &amp; Edge →
@@ -57,7 +62,12 @@ export default function HomePage() {
             href="/app"
             className="flex flex-col items-start p-6 bg-white text-gray-900 rounded-3xl border border-gray-200 hover:border-gray-400 transition-all shadow-sm hover:shadow-md text-left group"
           >
-            <span className="text-2xl mb-3">⚙️</span>
+            <div className="w-10 h-10 rounded-xl bg-gray-100 flex items-center justify-center text-gray-800 mb-3">
+              <svg className="w-5 h-5" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+                <circle cx="12" cy="12" r="3" />
+                <path d="M19.4 15a1.65 1.65 0 0 0 .33 1.82l.06.06a2 2 0 0 1 0 2.83 2 2 0 0 1-2.83 0l-.06-.06a1.65 1.65 0 0 0-1.82-.33 1.65 1.65 0 0 0-1 1.51V21a2 2 0 0 1-2 2 2 2 0 0 1-2-2v-.09A1.65 1.65 0 0 0 9 19.4a1.65 1.65 0 0 0-1.82.33l-.06.06a2 2 0 0 1-2.83 0 2 2 0 0 1 0-2.83l.06-.06a1.65 1.65 0 0 0 .33-1.82 1.65 1.65 0 0 0-1.51-1H3a2 2 0 0 1-2-2 2 2 0 0 1 2-2h.09A1.65 1.65 0 0 0 4.6 9a1.65 1.65 0 0 0-.33-1.82l-.06-.06a2 2 0 0 1 0-2.83 2 2 0 0 1 2.83 0l.06.06a1.65 1.65 0 0 0 1.82.33H9a1.65 1.65 0 0 0 1-1.51V3a2 2 0 0 1 2-2 2 2 0 0 1 2 2v.09a1.65 1.65 0 0 0 1 1.51 1.65 1.65 0 0 0 1.82-.33l.06-.06a2 2 0 0 1 2.83 0 2 2 0 0 1 0 2.83l-.06.06a1.65 1.65 0 0 0-.33 1.82V9a1.65 1.65 0 0 0 1.51 1H21a2 2 0 0 1 2 2 2 2 0 0 1-2 2h-.09a1.65 1.65 0 0 0-1.51 1z" />
+              </svg>
+            </div>
             <span className="text-xs font-bold text-gray-400 uppercase tracking-wider">Salon Operations</span>
             <span className="text-lg font-black text-gray-900 mt-1 group-hover:translate-x-0.5 transition-transform">
               Salon Dashboard →

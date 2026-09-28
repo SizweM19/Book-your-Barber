@@ -12,3 +12,20 @@ body {
   padding: 0;
   -webkit-font-smoothing: antialiased;
 }
+
+@layer utilities {
+  .safe-area-bottom {
+    padding-bottom: max(1rem, env(safe-area-inset-bottom, 1rem));
+  }
+  .safe-area-top {
+    padding-top: max(1rem, env(safe-area-inset-top, 1rem));
+  }
+  .no-scrollbar::-webkit-scrollbar {
+    display: none;
+  }
+  .no-scrollbar {
+    -ms-overflow-style: none;
+    scrollbar-width: none;
+  }
+}
+

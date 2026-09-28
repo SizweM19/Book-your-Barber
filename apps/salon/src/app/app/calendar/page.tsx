@@ -3,6 +3,7 @@
 import React, { useState } from 'react'
 import { useRouter } from 'next/navigation'
 import { CalendarDayScreen, CalendarWeekScreen } from '@/ops/Calendar'
+import { getRouteForOpsView } from '@/ops/shared'
 
 export default function CalendarPage() {
   const router = useRouter()
@@ -11,9 +12,7 @@ export default function CalendarPage() {
   function handleNav(view: string) {
     if (view === 'calendarWeek') setViewMode('week')
     else if (view === 'calendarDay') setViewMode('day')
-    else if (view === 'createAppt') router.push('/app/appointments?action=create')
-    else if (view === 'dashboard') router.push('/app')
-    else router.push(`/app/${view}`)
+    else router.push(getRouteForOpsView(view))
   }
 
   function handleAppt(ref: string) {

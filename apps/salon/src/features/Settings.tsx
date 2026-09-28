@@ -56,10 +56,10 @@ function ErrorBanner({ message, onRetry }: { message: string; onRetry: () => voi
   )
 }
 
-function SettingsNavCard({ emoji, title, description, onClick }: { emoji: string; title: string; description: string; onClick: () => void }) {
+function SettingsNavCard({ icon, title, description, onClick }: { icon: React.ReactNode; title: string; description: string; onClick: () => void }) {
   return (
     <button onClick={onClick} className="flex items-start gap-4 p-4 bg-white rounded-2xl border border-gray-100 shadow-sm hover:border-gray-300 hover:shadow-md transition-all text-left w-full group">
-      <div className="w-10 h-10 bg-gray-50 rounded-xl flex items-center justify-center text-xl flex-shrink-0 group-hover:bg-gray-100 transition-colors">{emoji}</div>
+      <div className="w-10 h-10 bg-gray-50 rounded-xl flex items-center justify-center text-gray-700 flex-shrink-0 group-hover:bg-gray-100 transition-colors">{icon}</div>
       <div className="flex-1 min-w-0">
         <p className="font-bold text-[14px] text-gray-900">{title}</p>
         <p className="text-[12px] text-gray-500 mt-0.5 leading-relaxed">{description}</p>
@@ -108,9 +108,30 @@ export function SettingsHubScreen({ onNav }: { onNav: (v: OpsView) => void }) {
   const incomplete = checklist.filter(c => !c.done)
 
   const warnings = [
-    ...(activeServices.length === 0 ? [{ emoji:"✂️", msg:"No active services", action:"Add service", nav:"settingsServices" as OpsView }] : []),
-    ...(activeStaff.length === 0    ? [{ emoji:"👥", msg:"No active staff members", action:"Add staff", nav:"settingsAddStaff" as OpsView }] : []),
-    { emoji:"💳", msg:"No payment provider connected. Online payment is unavailable.", action:"Set up payment", nav:"settingsPayments" as OpsView },
+    ...(activeServices.length === 0 ? [{
+      icon: (
+        <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+          <circle cx="6" cy="6" r="3" /><circle cx="6" cy="18" r="3" /><line x1="20" y1="4" x2="8.12" y2="15.88" /><line x1="14.47" y1="14.48" x2="20" y2="20" /><line x1="8.12" y1="8.12" x2="12" y2="12" />
+        </svg>
+      ),
+      msg: "No active services", action: "Add service", nav: "settingsServices" as OpsView
+    }] : []),
+    ...(activeStaff.length === 0 ? [{
+      icon: (
+        <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+          <path d="M17 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2" /><circle cx="9" cy="7" r="4" /><path d="M23 21v-2a4 4 0 0 0-3-3.87" /><path d="M16 3.13a4 4 0 0 1 0 7.75" />
+        </svg>
+      ),
+      msg: "No active staff members", action: "Add staff", nav: "settingsAddStaff" as OpsView
+    }] : []),
+    {
+      icon: (
+        <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+          <rect x="2" y="4" width="20" height="16" rx="2" /><line x1="2" y1="10" x2="22" y2="10" />
+        </svg>
+      ),
+      msg: "No payment provider connected. Online payment is unavailable.", action: "Set up payment", nav: "settingsPayments" as OpsView
+    },
   ]
 
   return (
@@ -124,7 +145,7 @@ export function SettingsHubScreen({ onNav }: { onNav: (v: OpsView) => void }) {
         <div className="space-y-2">
           {warnings.map((w, i) => (
             <div key={i} className="flex items-center gap-3 bg-amber-50 border border-amber-100 rounded-xl px-4 py-3">
-              <span className="text-base flex-shrink-0">{w.emoji}</span>
+              <span className="text-amber-800 flex-shrink-0">{w.icon}</span>
               <p className="flex-1 text-[13px] font-medium text-amber-900">{w.msg}</p>
               <button onClick={() => onNav(w.nav)} className="text-[12px] font-bold text-amber-700 underline underline-offset-2 flex-shrink-0">{w.action} →</button>
             </div>
@@ -135,10 +156,14 @@ export function SettingsHubScreen({ onNav }: { onNav: (v: OpsView) => void }) {
       <Card className="p-5">
         <div className="flex items-center justify-between mb-4">
           <p className="font-bold text-[15px] text-gray-900">Setup checklist</p>
-          {incomplete.length === 0
-            ? <span className="px-2.5 py-1 bg-emerald-50 text-emerald-700 text-[11px] font-bold rounded-full">All done ✓</span>
-            : <span className="px-2.5 py-1 bg-amber-50 text-amber-700 text-[11px] font-bold rounded-full">{incomplete.length} remaining</span>
-          }
+          {incomplete.length === 0 ? (
+            <span className="inline-flex items-center gap-1 px-2.5 py-1 bg-emerald-50 text-emerald-700 text-[11px] font-bold rounded-full">
+              <svg width="11" height="11" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="3" strokeLinecap="round" strokeLinejoin="round"><polyline points="20 6 9 17 4 12" /></svg>
+              All done
+            </span>
+          ) : (
+            <span className="px-2.5 py-1 bg-amber-50 text-amber-700 text-[11px] font-bold rounded-full">{incomplete.length} remaining</span>
+          )}
         </div>
         {incomplete.length > 0 && (
           <div className="bg-amber-50 border border-amber-100 rounded-xl px-4 py-3 mb-4">
@@ -160,33 +185,115 @@ export function SettingsHubScreen({ onNav }: { onNav: (v: OpsView) => void }) {
 
       <SettingsSection title="Booking">
         <div className="grid sm:grid-cols-2 gap-3">
-          <SettingsNavCard emoji="📅" title="Booking settings" description="Online booking, advance limits, staff assignment strategy." onClick={() => onNav("settingsBooking")} />
-          <SettingsNavCard emoji="🔗" title="Booking link & QR" description="Share your booking page link and download a QR code." onClick={() => onNav("settingsBooking")} />
-          <SettingsNavCard emoji="📊" title="Availability preview" description="See exactly what customers can book and why slots are unavailable." onClick={() => onNav("settingsAvailability")} />
+          <SettingsNavCard
+            icon={
+              <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+                <rect x="3" y="4" width="18" height="18" rx="2" ry="2" />
+                <line x1="16" y1="2" x2="16" y2="6" />
+                <line x1="8" y1="2" x2="8" y2="6" />
+                <line x1="3" y1="10" x2="21" y2="10" />
+              </svg>
+            }
+            title="Booking settings"
+            description="Online booking, advance limits, staff assignment strategy."
+            onClick={() => onNav("settingsBooking")}
+          />
+          <SettingsNavCard
+            icon={
+              <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+                <path d="M10 13a5 5 0 0 0 7.54.54l3-3a5 5 0 0 0-7.07-7.07l-1.72 1.71" />
+                <path d="M14 11a5 5 0 0 0-7.54-.54l-3 3a5 5 0 0 0 7.07 7.07l1.71-1.71" />
+              </svg>
+            }
+            title="Booking link & QR"
+            description="Share your booking page link and download a QR code."
+            onClick={() => onNav("settingsBooking")}
+          />
+          <SettingsNavCard
+            icon={
+              <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+                <line x1="18" y1="20" x2="18" y2="10" />
+                <line x1="12" y1="20" x2="12" y2="4" />
+                <line x1="6" y1="20" x2="6" y2="14" />
+              </svg>
+            }
+            title="Availability preview"
+            description="See exactly what customers can book and why slots are unavailable."
+            onClick={() => onNav("settingsAvailability")}
+          />
         </div>
       </SettingsSection>
 
       <SettingsSection title="Services & Staff">
         <div className="grid sm:grid-cols-2 gap-3">
-          <SettingsNavCard emoji="✂️" title="Services" description="Manage your service menu, prices, durations, and categories." onClick={() => onNav("settingsServices")} />
-          <SettingsNavCard emoji="👥" title="Staff" description="Add staff members and configure their schedules and services." onClick={() => onNav("staffList")} />
+          <SettingsNavCard
+            icon={
+              <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+                <circle cx="6" cy="6" r="3" />
+                <circle cx="6" cy="18" r="3" />
+                <line x1="20" y1="4" x2="8.12" y2="15.88" />
+                <line x1="14.47" y1="14.48" x2="20" y2="20" />
+                <line x1="8.12" y1="8.12" x2="12" y2="12" />
+              </svg>
+            }
+            title="Services"
+            description="Manage your service menu, prices, durations, and categories."
+            onClick={() => onNav("settingsServices")}
+          />
+          <SettingsNavCard
+            icon={
+              <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+                <path d="M17 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2" />
+                <circle cx="9" cy="7" r="4" />
+                <path d="M23 21v-2a4 4 0 0 0-3-3.87" />
+                <path d="M16 3.13a4 4 0 0 1 0 7.75" />
+              </svg>
+            }
+            title="Staff"
+            description="Add staff members and configure their schedules and services."
+            onClick={() => onNav("staffList")}
+          />
         </div>
       </SettingsSection>
 
       <SettingsSection title="Payments & Policy">
         <div className="grid sm:grid-cols-2 gap-3">
-          <SettingsNavCard emoji="💳" title="Payment settings" description="Connect your payment provider and configure pay-at-shop." onClick={() => onNav("settingsPayments")} />
-          <SettingsNavCard emoji="📋" title="Cancellation policy" description="View platform-controlled cancellation and refund rules." onClick={() => onNav("settingsCancellation")} />
+          <SettingsNavCard
+            icon={
+              <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+                <rect x="2" y="4" width="20" height="16" rx="2" />
+                <line x1="2" y1="10" x2="22" y2="10" />
+              </svg>
+            }
+            title="Payment settings"
+            description="Connect your payment provider and configure pay-at-shop."
+            onClick={() => onNav("settingsPayments")}
+          />
+          <SettingsNavCard
+            icon={
+              <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+                <path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z" />
+                <polyline points="14 2 14 8 20 8" />
+                <line x1="16" y1="13" x2="8" y2="13" />
+                <line x1="16" y1="17" x2="8" y2="17" />
+              </svg>
+            }
+            title="Cancellation policy"
+            description="View platform-controlled cancellation and refund rules."
+            onClick={() => onNav("settingsCancellation")}
+          />
         </div>
       </SettingsSection>
 
       <div className="flex gap-3 flex-wrap pb-2">
         <button className="flex items-center gap-2 px-4 py-2.5 bg-gray-900 text-white rounded-xl text-[13px] font-semibold hover:bg-gray-800 transition-colors shadow-sm">
-          👁 Preview booking page
+          <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M1 12s4-8 11-8 11 8 11 8-4 8-11 8-11-8-11-8z"/><circle cx="12" cy="12" r="3"/></svg>
+          <span>Preview booking page</span>
         </button>
         <button onClick={() => { navigator.clipboard?.writeText("bookyourbarber.co.za/book/fade-and-edge") }}
           className="flex items-center gap-2 px-4 py-2.5 border-2 border-gray-200 text-gray-700 rounded-xl text-[13px] font-semibold hover:border-gray-400 transition-colors">
-          🔗 Copy booking link
+          <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M10 13a5 5 0 0 0 7.54.54l3-3a5 5 0 0 0-7.07-7.07l-1.72 1.71" /><path d="M14 11a5 5 0 0 0-7.54-.54l-3 3a5 5 0 0 0 7.07 7.07l1.71-1.71" /></svg>
+          <span>Copy booking link</span>
         </button>
       </div>
     </div>
@@ -241,7 +348,21 @@ export function SettingsServicesScreen({ onBack, onNav, onEdit }: {
         <div className="p-8 text-center text-gray-500">Loading services...</div>
       ) : services.length === 0 ? (
         <Card>
-          <EmptyState icon="✂️" title="No services yet" body="Add your first service so customers can start booking." cta="Add service" onCta={() => onNav("settingsAddService")} />
+          <EmptyState
+            icon={
+              <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+                <circle cx="6" cy="6" r="3" />
+                <circle cx="6" cy="18" r="3" />
+                <line x1="20" y1="4" x2="8.12" y2="15.88" />
+                <line x1="14.47" y1="14.48" x2="20" y2="20" />
+                <line x1="8.12" y1="8.12" x2="12" y2="12" />
+              </svg>
+            }
+            title="No services yet"
+            body="Add your first service so customers can start booking."
+            cta="Add service"
+            onCta={() => onNav("settingsAddService")}
+          />
         </Card>
       ) : (
         <div className="space-y-5">
@@ -649,7 +770,11 @@ export function AvailabilityScreen({ onBack }: { onBack: () => void }) {
       <button onClick={() => setExpanded(e => !e)}
         className="w-full flex items-center justify-between px-4 py-3 bg-blue-50 border border-blue-100 rounded-xl mb-5 text-left">
         <div className="flex items-center gap-2">
-          <span className="text-base">💡</span>
+          <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="#2563EB" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+            <circle cx="12" cy="12" r="10" />
+            <line x1="12" y1="16" x2="12" y2="12" />
+            <line x1="12" y1="8" x2="12.01" y2="8" />
+          </svg>
           <p className="text-[13px] font-semibold text-blue-900">How are available times calculated?</p>
         </div>
         <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="#3B82F6" strokeWidth="2.5" strokeLinecap="round"
@@ -883,10 +1008,26 @@ export function BookingSettingsScreen({ onBack }: { onBack: () => void }) {
           </div>
           <div className="flex gap-2 flex-wrap">
             <button onClick={handleCopy} className={`flex items-center gap-2 px-4 py-2.5 rounded-xl text-[13px] font-semibold border-2 transition-colors ${linkCopied ? "border-emerald-200 bg-emerald-50 text-emerald-700" : "border-gray-200 text-gray-700 hover:border-gray-400"}`}>
-              {linkCopied ? "✓ Copied!" : "📋 Copy link"}
+              {linkCopied ? (
+                <>
+                  <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round"><polyline points="20 6 9 17 4 12" /></svg>
+                  <span>Copied!</span>
+                </>
+              ) : (
+                <>
+                  <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><rect x="9" y="9" width="13" height="13" rx="2" ry="2" /><path d="M5 15H4a2 2 0 0 1-2-2V4a2 2 0 0 1 2-2h9a2 2 0 0 1 2 2v1" /></svg>
+                  <span>Copy link</span>
+                </>
+              )}
             </button>
-            <button className="flex items-center gap-2 px-4 py-2.5 border-2 border-gray-200 text-gray-700 rounded-xl text-[13px] font-semibold hover:border-gray-400 transition-colors">🔗 Open page</button>
-            <button className="flex items-center gap-2 px-4 py-2.5 border-2 border-gray-200 text-gray-700 rounded-xl text-[13px] font-semibold hover:border-gray-400 transition-colors">↗ Share</button>
+            <button className="flex items-center gap-2 px-4 py-2.5 border-2 border-gray-200 text-gray-700 rounded-xl text-[13px] font-semibold hover:border-gray-400 transition-colors">
+              <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M10 13a5 5 0 0 0 7.54.54l3-3a5 5 0 0 0-7.07-7.07l-1.72 1.71" /><path d="M14 11a5 5 0 0 0-7.54-.54l-3 3a5 5 0 0 0 7.07 7.07l1.71-1.71" /></svg>
+              <span>Open page</span>
+            </button>
+            <button className="flex items-center gap-2 px-4 py-2.5 border-2 border-gray-200 text-gray-700 rounded-xl text-[13px] font-semibold hover:border-gray-400 transition-colors">
+              <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><circle cx="18" cy="5" r="3" /><circle cx="6" cy="12" r="3" /><circle cx="18" cy="19" r="3" /><line x1="8.59" y1="13.51" x2="15.42" y2="17.49" /><line x1="15.41" y1="6.51" x2="8.59" y2="10.49" /></svg>
+              <span>Share</span>
+            </button>
           </div>
         </Card>
         <Card className="p-5">
@@ -898,8 +1039,14 @@ export function BookingSettingsScreen({ onBack }: { onBack: () => void }) {
             <div className="flex-1 min-w-[180px]">
               <p className="text-[13px] text-gray-600 leading-relaxed mb-4">Customers who scan this QR code go directly to your booking page. Print it and display it in your salon.</p>
               <div className="flex flex-col gap-2">
-                <button className="flex items-center gap-2 px-4 py-2.5 bg-gray-900 text-white rounded-xl text-[13px] font-semibold hover:bg-gray-800 transition-colors">⬇ Download QR code</button>
-                <button className="flex items-center gap-2 px-4 py-2.5 border-2 border-gray-200 text-gray-700 rounded-xl text-[13px] font-semibold hover:border-gray-400 transition-colors">🖨 Print QR code</button>
+                <button className="flex items-center gap-2 px-4 py-2.5 bg-gray-900 text-white rounded-xl text-[13px] font-semibold hover:bg-gray-800 transition-colors">
+                  <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><polyline points="7 10 12 15 17 10"/><line x1="12" y1="15" x2="12" y2="3"/></svg>
+                  <span>Download QR code</span>
+                </button>
+                <button className="flex items-center gap-2 px-4 py-2.5 border-2 border-gray-200 text-gray-700 rounded-xl text-[13px] font-semibold hover:border-gray-400 transition-colors">
+                  <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><polyline points="6 9 6 2 18 2 18 9"/><path d="M6 18H4a2 2 0 0 1-2-2v-5a2 2 0 0 1 2-2h16a2 2 0 0 1 2 2v5a2 2 0 0 1-2 2h-2"/><rect x="6" y="14" width="12" height="8"/></svg>
+                  <span>Print QR code</span>
+                </button>
               </div>
             </div>
           </div>

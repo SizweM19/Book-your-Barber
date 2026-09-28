@@ -3,6 +3,7 @@
 import React, { useState, useEffect, Suspense } from 'react'
 import { useRouter, useSearchParams } from 'next/navigation'
 import { StaffListScreen, StaffProfileScreen } from '@/ops/Staff'
+import { getRouteForOpsView } from '@/ops/shared'
 
 function StaffContent() {
   const router = useRouter()
@@ -19,6 +20,8 @@ function StaffContent() {
   function handleNav(view: string) {
     if (view === 'dashboard') router.push('/app')
     else router.push(`/app/${view}`)
+    if (view === 'staffList') setSelectedStaffId(null)
+    else router.push(getRouteForOpsView(view))
   }
 
   if (selectedStaffId) {

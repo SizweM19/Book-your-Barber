@@ -1,7 +1,7 @@
 'use client'
 
-import React, { useState, Suspense } from 'react'
-import { useRouter } from 'next/navigation'
+import React, { useState, useEffect, Suspense } from 'react'
+import { useRouter, useSearchParams } from 'next/navigation'
 import {
   SettingsHubScreen,
   SettingsServicesScreen,
@@ -13,12 +13,21 @@ import {
   PaymentSettingsScreen,
   CancellationPolicyScreen,
 } from '@/ops/Settings'
+import { getRouteForOpsView } from '@/ops/shared'
 
 function SettingsContent() {
   const router = useRouter()
-  const [activeScreen, setActiveScreen] = useState<string>('hub')
+  const searchParams = useSearchParams()
+  const viewParam = searchParams.get('view')
+  const [activeScreen, setActiveScreen] = useState<string>(viewParam || 'hub')
   const [editServiceId, setEditServiceId] = useState<string>('')
   const [history, setHistory] = useState<string[]>([])
+
+  useEffect(() => {
+    if (viewParam) {
+      setActiveScreen(viewParam)
+    }
+  }, [viewParam])
 
   function navTo(screen: string) {
     if (screen === 'staffList') {
@@ -29,8 +38,17 @@ function SettingsContent() {
       router.push('/app')
       return
     }
-    setHistory(h => [...h, activeScreen])
-    setActiveScreen(screen)
+    const internalScreens = [
+      'settingsServices', 'settingsAddService', 'settingsEditService',
+      'settingsAddStaff', 'settingsAvailability', 'settingsBooking',
+      'settingsPayments', 'settingsCancellation', 'hub'
+    ]
+    if (internalScreens.includes(screen)) {
+      setHistory(h => [...h, activeScreen])
+      setActiveScreen(screen)
+    } else {
+      router.push(getRouteForOpsView(screen))
+    }
   }
 
   function back() {

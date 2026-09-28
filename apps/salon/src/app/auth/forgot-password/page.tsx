@@ -41,6 +41,11 @@ export default function ForgotPasswordPage() {
       {error && (
         <div className="mb-5 p-3.5 bg-red-50 border border-red-100 rounded-2xl flex items-start gap-3">
           <span className="text-red-500 text-sm">⚠️</span>
+          <svg className="w-4 h-4 text-red-500 flex-shrink-0 mt-0.5" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+            <circle cx="12" cy="12" r="10" />
+            <line x1="12" y1="8" x2="12" y2="12" />
+            <line x1="12" y1="16" x2="12.01" y2="16" />
+          </svg>
           <p className="text-xs font-medium text-red-700 leading-snug">{error}</p>
         </div>
       )}
@@ -48,6 +53,12 @@ export default function ForgotPasswordPage() {
       {success ? (
         <div className="p-4 bg-emerald-50 border border-emerald-100 rounded-2xl text-center space-y-3">
           <div className="text-2xl">📬</div>
+          <div className="w-10 h-10 mx-auto bg-emerald-100 text-emerald-700 rounded-xl flex items-center justify-center">
+            <svg className="w-5 h-5" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+              <path d="M4 4h16c1.1 0 2 .9 2 2v12c0 1.1-.9 2-2 2H4c-1.1 0-2-.9-2-2V6c0-1.1.9-2 2-2z" />
+              <polyline points="22,6 12,13 2,6" />
+            </svg>
+          </div>
           <p className="text-sm font-semibold text-emerald-900">Check your email</p>
           <p className="text-xs text-emerald-700">
             We sent a password reset link to <strong>{email}</strong>. Please check your inbox and follow the instructions.

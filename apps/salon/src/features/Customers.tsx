@@ -164,7 +164,9 @@ export function CustomerListScreen({ onNav, onCustomer }: {
           <div className="bg-white rounded-2xl max-w-md w-full p-6 shadow-xl space-y-4">
             <div className="flex items-center justify-between">
               <h3 className="font-bold text-[18px] text-gray-900">Add new customer</h3>
-              <button onClick={() => setShowAddModal(false)} className="text-gray-400 hover:text-gray-600 text-lg">✕</button>
+              <button onClick={() => setShowAddModal(false)} className="text-gray-400 hover:text-gray-600 p-1 rounded-lg">
+                <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/></svg>
+              </button>
             </div>
             {createError && (
               <div className="p-3 bg-red-50 border border-red-100 rounded-xl text-[13px] text-red-700">
@@ -231,7 +233,18 @@ export function CustomerListScreen({ onNav, onCustomer }: {
         {loading ? (
           <div className="p-8 text-center text-gray-500">Loading customers...</div>
         ) : filtered.length === 0 ? (
-          <EmptyState icon="👤" title="No customers found" body="Try adjusting the search or filter, or add a new customer." />
+          <EmptyState
+            icon={
+              <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+                <path d="M17 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2" />
+                <circle cx="9" cy="7" r="4" />
+                <path d="M23 21v-2a4 4 0 0 0-3-3.87" />
+                <path d="M16 3.13a4 4 0 0 1 0 7.75" />
+              </svg>
+            }
+            title="No customers found"
+            body="Try adjusting the search or filter, or add a new customer."
+          />
         ) : (
           <div className="overflow-x-auto">
             <table className="w-full">
@@ -436,7 +449,9 @@ export function CustomerProfileScreen({ customerId, onBack, onAppt, onNav }: {
           <div className="bg-white rounded-2xl max-w-md w-full p-6 shadow-xl space-y-4">
             <div className="flex items-center justify-between">
               <h3 className="font-bold text-[18px] text-gray-900">Edit customer profile</h3>
-              <button onClick={() => setShowEditModal(false)} className="text-gray-400 hover:text-gray-600 text-lg">✕</button>
+              <button onClick={() => setShowEditModal(false)} className="text-gray-400 hover:text-gray-600 p-1 rounded-lg">
+                <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/></svg>
+              </button>
             </div>
             <div className="space-y-3">
               <div>
@@ -561,7 +576,16 @@ export function CustomerProfileScreen({ customerId, onBack, onAppt, onNav }: {
       {tab === "history" && (
         <Card>
           {custAppts.length === 0 ? (
-            <EmptyState icon="📋" title="No appointments" body="This customer has no booking history yet." />
+            <EmptyState
+              icon={
+                <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+                  <path d="M16 4h2a2 2 0 0 1 2 2v14a2 2 0 0 1-2 2H6a2 2 0 0 1-2-2V6a2 2 0 0 1 2-2h2" />
+                  <rect x="8" y="2" width="8" height="4" rx="1" ry="1" />
+                </svg>
+              }
+              title="No appointments"
+              body="This customer has no booking history yet."
+            />
           ) : (
             <div className="divide-y divide-gray-50">
               {custAppts.map(a => (
@@ -589,7 +613,16 @@ export function CustomerProfileScreen({ customerId, onBack, onAppt, onNav }: {
       {tab === "payments" && (
         <Card>
           {paymentHistory.length === 0 ? (
-            <EmptyState icon="💳" title="No payment records" body="No payments have been recorded for this customer." />
+            <EmptyState
+              icon={
+                <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+                  <rect x="2" y="4" width="20" height="16" rx="2" />
+                  <line x1="2" y1="10" x2="22" y2="10" />
+                </svg>
+              }
+              title="No payment records"
+              body="No payments have been recorded for this customer."
+            />
           ) : (
             <div>
               <div className="px-5 py-3 border-b border-gray-100 flex gap-5">
@@ -621,7 +654,18 @@ export function CustomerProfileScreen({ customerId, onBack, onAppt, onNav }: {
       {/* Packages tab */}
       {tab === "packages" && (
         <Card>
-          <EmptyState icon="📦" title="No packages" body="Package management coming soon. Customers can be enrolled in prepaid service bundles." />
+          <EmptyState
+            icon={
+              <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+                <line x1="16.5" y1="9.4" x2="7.5" y2="4.21" />
+                <path d="M21 16V8a2 2 0 0 0-1-1.73l-7-4a2 2 0 0 0-2 0l-7 4A2 2 0 0 0 3 8v8a2 2 0 0 0 1 1.73l7 4a2 2 0 0 0 2 0l7-4A2 2 0 0 0 21 16z" />
+                <polyline points="3.27 6.96 12 12.01 20.73 6.96" />
+                <line x1="12" y1="22.08" x2="12" y2="12" />
+              </svg>
+            }
+            title="No packages"
+            body="Package management coming soon. Customers can be enrolled in prepaid service bundles."
+          />
         </Card>
       )}
 
@@ -634,7 +678,11 @@ export function CustomerProfileScreen({ customerId, onBack, onAppt, onNav }: {
                 <p className="text-[11px] font-bold uppercase tracking-widest text-gray-400 mb-1">Loyalty points</p>
                 <p className="text-[32px] font-black text-gray-900">{cust.visits * 10} pts</p>
               </div>
-              <div className="w-14 h-14 bg-amber-50 rounded-2xl flex items-center justify-center text-[28px]">⭐</div>
+              <div className="w-14 h-14 bg-amber-50 rounded-2xl flex items-center justify-center text-amber-500">
+                <svg width="28" height="28" viewBox="0 0 24 24" fill="currentColor">
+                  <polygon points="12 2 15.09 8.26 22 9.27 17 14.14 18.18 21.02 12 17.77 5.82 21.02 7 14.14 2 9.27 8.91 8.26 12 2" />
+                </svg>
+              </div>
             </div>
             <div className="bg-gray-50 rounded-xl p-4">
               <p className="text-[12px] text-gray-500 leading-relaxed">Points are earned at 10 per visit. Redemption and tier management coming soon.</p>
@@ -647,7 +695,16 @@ export function CustomerProfileScreen({ customerId, onBack, onAppt, onNav }: {
       {tab === "communications" && (
         <Card>
           {custAppts.flatMap(a => (a.notifications || [])).length === 0 ? (
-            <EmptyState icon="📨" title="No communications" body="No notifications have been sent to this customer." />
+            <EmptyState
+              icon={
+                <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+                  <path d="M4 4h16c1.1 0 2 .9 2 2v12c0 1.1-.9 2-2 2H4c-1.1 0-2-.9-2-2V6c0-1.1.9-2 2-2z" />
+                  <polyline points="22,6 12,13 2,6" />
+                </svg>
+              }
+              title="No communications"
+              body="No notifications have been sent to this customer."
+            />
           ) : (
             <div className="divide-y divide-gray-50">
               {custAppts.flatMap(a => (a.notifications || []).map((n: any) => ({

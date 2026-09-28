@@ -22,3 +22,10 @@ logs/
 # beside it.
 /.plugins/
 /.opencode-skills/
+
+# Scratch & Local Seed Scripts (never commit credentials)
+scratch-*.mjs
+scratch-*.mjs.bak
+seed-*.mjs
+seed-*.mjs.bak
+*.bak

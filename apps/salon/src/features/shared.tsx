@@ -1,5 +1,5 @@
 import React from "react"
-import type { AppointmentStatus, PaymentStatus, NotificationStatus, NotificationChannel } from "./types"
+import type { AppointmentStatus, PaymentStatus, NotificationStatus, NotificationChannel, OpsView } from "./types"
 
 // ─── FORMATTERS ───────────────────────────────────────────────────────────────
 
@@ -61,9 +61,9 @@ export function SourceBadge({ source }: { source: "online" | "qr" | "manual" }) 
 }
 
 export function NotifStatusIcon({ status }: { status: NotificationStatus }) {
-  if (status === "sent")        return <span className="text-emerald-500 font-bold">✓</span>
-  if (status === "failed")      return <span className="text-red-500 font-bold">⚠</span>
-  if (status === "pending")     return <span className="text-amber-500 font-bold">⏳</span>
+  if (status === "sent")        return <span className="inline-flex items-center px-1.5 py-0.5 rounded text-[10px] font-bold bg-emerald-50 text-emerald-700">Sent</span>
+  if (status === "failed")      return <span className="inline-flex items-center px-1.5 py-0.5 rounded text-[10px] font-bold bg-red-50 text-red-700">Failed</span>
+  if (status === "pending")     return <span className="inline-flex items-center px-1.5 py-0.5 rounded text-[10px] font-bold bg-amber-50 text-amber-700">Pending</span>
   if (status === "notRequired") return <span className="text-gray-300 font-bold">—</span>
   return null
 }
@@ -168,15 +168,33 @@ export function BackBtn({ onClick }: { onClick: () => void }) {
   )
 }
 
-export function EmptyState({ icon, title, body, cta, onCta }: {
-  icon: React.ReactNode; title: string; body: string; cta?: string; onCta?: () => void
-}) {
+export interface EmptyStateProps {
+  icon?: React.ReactNode
+  title: string
+  body?: string
+  description?: string
+  cta?: string
+  action?: React.ReactNode
+  onCta?: () => void
+}
+
+export function EmptyState({ icon, title, body, description, cta, action, onCta }: EmptyStateProps) {
+  const text = body || description
   return (
-    <div className="flex flex-col items-center justify-center py-20 text-center px-6">
-      <div className="text-5xl mb-4">{icon}</div>
-      <h3 className="text-[17px] font-bold text-gray-900 mb-1.5">{title}</h3>
-      <p className="text-[13px] text-gray-500 mb-6 max-w-xs leading-relaxed">{body}</p>
+    <div className="flex flex-col items-center justify-center py-16 text-center px-6">
+      <div className="w-14 h-14 bg-gray-100 rounded-2xl flex items-center justify-center text-gray-500 mb-4 shadow-xs">
+        {icon || (
+          <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+            <circle cx="12" cy="12" r="10" />
+            <line x1="12" y1="8" x2="12" y2="12" />
+            <line x1="12" y1="16" x2="12.01" y2="16" />
+          </svg>
+        )}
+      </div>
+      <h3 className="text-[16px] font-bold text-gray-900 mb-1.5">{title}</h3>
+      {text && <p className="text-[13px] text-gray-500 mb-6 max-w-xs leading-relaxed">{text}</p>}
       {cta && onCta && <PrimaryBtn label={cta} onClick={onCta} />}
+      {action}
     </div>
   )
 }
@@ -197,3 +215,62 @@ export function InlineFeedback({ type, message }: { type: 'loading' | 'error' | 
     </div>
   )
 }
+
+export function getRouteForOpsView(view: OpsView | string): string {
+  switch (view) {
+    case "dashboard":
+      return "/app"
+    case "calendarDay":
+    case "calendarWeek":
+      return "/app/calendar"
+    case "appointmentList":
+    case "appointmentDetail":
+      return "/app/appointments"
+    case "createAppt":
+      return "/app/appointments?action=create"
+    case "customerList":
+    case "customerProfile":
+      return "/app/customers"
+    case "staffList":
+    case "staffProfile":
+      return "/app/staff"
+    case "serviceList":
+      return "/app/services"
+    case "financials":
+      return "/app/financials"
+    case "paymentList":
+      return "/app/financials?view=paymentList"
+    case "outstandingPayments":
+      return "/app/financials?view=outstandingPayments"
+    case "refundList":
+      return "/app/financials?view=refundList"
+    case "revenueDetail":
+      return "/app/financials?view=revenueDetail"
+    case "expenseList":
+      return "/app/financials?view=expenseList"
+    case "financialReports":
+      return "/app/financials?view=financialReports"
+    case "settings":
+      return "/app/settings"
+    case "settingsServices":
+      return "/app/settings?view=settingsServices"
+    case "settingsAddService":
+      return "/app/settings?view=settingsAddService"
+    case "settingsAvailability":
+      return "/app/settings?view=settingsAvailability"
+    case "settingsBooking":
+      return "/app/settings?view=settingsBooking"
+    case "settingsPayments":
+      return "/app/settings?view=settingsPayments"
+    case "settingsCancellation":
+      return "/app/settings?view=settingsCancellation"
+    case "support":
+      return "/app/support"
+    default:
+      if (typeof view === "string" && view.startsWith("/app")) {
+        return view
+      }
+      return "/app"
+  }
+}
+

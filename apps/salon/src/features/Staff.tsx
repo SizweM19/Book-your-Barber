@@ -91,7 +91,9 @@ export function StaffListScreen({ onNav, onStaff }: { onNav: (v: OpsView) => voi
           <div className="bg-white rounded-2xl max-w-md w-full p-6 shadow-xl space-y-4">
             <div className="flex items-center justify-between">
               <h3 className="font-bold text-[18px] text-gray-900">Add staff member</h3>
-              <button onClick={() => setShowAddModal(false)} className="text-gray-400 hover:text-gray-600 text-lg">✕</button>
+              <button onClick={() => setShowAddModal(false)} className="text-gray-400 hover:text-gray-600 p-1 rounded-lg">
+                <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/></svg>
+              </button>
             </div>
             {createError && (
               <div className="p-3 bg-red-50 border border-red-100 rounded-xl text-[13px] text-red-700">
@@ -162,7 +164,20 @@ export function StaffListScreen({ onNav, onStaff }: { onNav: (v: OpsView) => voi
         <div className="p-8 text-center text-gray-500">Loading staff...</div>
       ) : staffList.length === 0 ? (
         <Card>
-          <EmptyState icon="👥" title="No staff members" body="Add your team to begin scheduling and accepting bookings." cta="Add staff" onCta={() => setShowAddModal(true)} />
+          <EmptyState
+            icon={
+              <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+                <path d="M16 21v-2a4 4 0 0 0-4-4H6a4 4 0 0 0-4 4v2" />
+                <circle cx="9" cy="7" r="4" />
+                <path d="M22 21v-2a4 4 0 0 0-3-3.87" />
+                <path d="M16 3.13a4 4 0 0 1 0 7.75" />
+              </svg>
+            }
+            title="No staff members"
+            body="Add your team to begin scheduling and accepting bookings."
+            cta="Add staff"
+            onCta={() => setShowAddModal(true)}
+          />
         </Card>
       ) : (
         <>
@@ -558,7 +573,9 @@ export function StaffProfileScreen({ staffId, onBack, onNav }: {
           <div className="bg-white rounded-2xl max-w-md w-full p-6 shadow-xl space-y-4">
             <div className="flex items-center justify-between">
               <h3 className="font-bold text-[18px] text-gray-900">Edit staff member</h3>
-              <button onClick={() => setShowEditModal(false)} className="text-gray-400 hover:text-gray-600 text-lg">✕</button>
+              <button onClick={() => setShowEditModal(false)} className="text-gray-400 hover:text-gray-600 p-1 rounded-lg">
+                <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/></svg>
+              </button>
             </div>
             <div className="space-y-3">
               <div>
@@ -677,7 +694,10 @@ export function StaffProfileScreen({ staffId, onBack, onNav }: {
           <div className="px-5 py-3 border-b border-gray-100 flex items-center justify-between">
             <p className="text-[11px] font-bold uppercase tracking-widest text-gray-400">Weekly schedule</p>
             {scheduleSavedToast && (
-              <span className="text-[12px] font-bold text-emerald-600">Schedule saved ✓</span>
+              <span className="inline-flex items-center gap-1 text-[12px] font-bold text-emerald-600">
+                <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="3" strokeLinecap="round" strokeLinejoin="round"><polyline points="20 6 9 17 4 12" /></svg>
+                Schedule saved
+              </span>
             )}
           </div>
           <div className="divide-y divide-gray-50">
@@ -726,7 +746,9 @@ export function StaffProfileScreen({ staffId, onBack, onNav }: {
             <Card className="p-5 border-2 border-gray-900">
               <div className="flex items-center justify-between mb-4">
                 <h4 className="font-bold text-[14px] text-gray-900">Add recurring break</h4>
-                <button onClick={() => setShowAddBreak(false)} className="text-gray-400 hover:text-gray-600">✕</button>
+                <button onClick={() => setShowAddBreak(false)} className="text-gray-400 hover:text-gray-600 p-1 rounded-lg">
+                  <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/></svg>
+                </button>
               </div>
               <div className="grid sm:grid-cols-2 gap-4 mb-4">
                 <div>
@@ -784,7 +806,9 @@ export function StaffProfileScreen({ staffId, onBack, onNav }: {
             <Card className="p-5 border-2 border-gray-900">
               <div className="flex items-center justify-between mb-4">
                 <h4 className="font-bold text-[14px] text-gray-900">Add schedule exception</h4>
-                <button onClick={() => setShowAddException(false)} className="text-gray-400 hover:text-gray-600">✕</button>
+                <button onClick={() => setShowAddException(false)} className="text-gray-400 hover:text-gray-600 p-1 rounded-lg">
+                  <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/></svg>
+                </button>
               </div>
               <div className="grid sm:grid-cols-2 gap-4 mb-4">
                 <div className="sm:col-span-2">
@@ -882,7 +906,17 @@ export function StaffProfileScreen({ staffId, onBack, onNav }: {
       {/* Performance */}
       {tab === "performance" && (
         <Card>
-          <EmptyState icon="📈" title="Detailed performance" body="Advanced analytics and commission tracking coming soon." />
+          <EmptyState
+            icon={
+              <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+                <line x1="18" y1="20" x2="18" y2="10" />
+                <line x1="12" y1="20" x2="12" y2="4" />
+                <line x1="6" y1="20" x2="6" y2="14" />
+              </svg>
+            }
+            title="Detailed performance"
+            body="Advanced analytics and commission tracking coming soon."
+          />
         </Card>
       )}
     </div>

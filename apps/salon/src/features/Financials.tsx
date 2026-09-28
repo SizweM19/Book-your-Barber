@@ -147,13 +147,48 @@ export function FinancialsHubScreen({ onNav, onAppt }: { onNav: (v: OpsView) => 
 
   const operatingResult = todayPaid - totalExpenses
 
-  const quickLinks = [
-    { emoji:"💳", label:"All payments",        sub:`${allPaymentsCount} records`,              nav:"paymentList"         as OpsView },
-    { emoji:"⚠️", label:"Outstanding",          sub:`${outstandingCount} unpaid`,               nav:"outstandingPayments"  as OpsView },
-    { emoji:"↩️", label:"Refunds",              sub:`${refundCount} total`,                     nav:"refundList"           as OpsView },
-    { emoji:"📊", label:"Revenue breakdown",    sub:"By staff, source & method",                nav:"revenueDetail"        as OpsView },
-    { emoji:"🧾", label:"Expenses",             sub:`${fmtR(totalExpenses)} recorded`,          nav:"expenseList"          as OpsView },
-    { emoji:"📋", label:"Reports & exports",    sub:"CSV and PDF downloads",                    nav:"financialReports"     as OpsView },
+  const quickLinks: {
+    icon: React.ReactNode;
+    label: string;
+    sub: string;
+    nav: OpsView;
+  }[] = [
+    {
+      icon: <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><rect x="2" y="4" width="20" height="16" rx="2"/><line x1="2" y1="10" x2="22" y2="10"/></svg>,
+      label: "All payments",
+      sub: `${allPaymentsCount} records`,
+      nav: "paymentList" as OpsView,
+    },
+    {
+      icon: <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="m21.73 18-8-14a2 2 0 0 0-3.48 0l-8 14A2 2 0 0 0 4 21h16a2 2 0 0 0 1.73-3Z"/><line x1="12" y1="9" x2="12" y2="13"/><line x1="12" y1="17" x2="12.01" y2="17"/></svg>,
+      label: "Outstanding",
+      sub: `${outstandingCount} unpaid`,
+      nav: "outstandingPayments" as OpsView,
+    },
+    {
+      icon: <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><polyline points="9 14 4 9 9 4"/><path d="M20 20v-7a4 4 0 0 0-4-4H4"/></svg>,
+      label: "Refunds",
+      sub: `${refundCount} total`,
+      nav: "refundList" as OpsView,
+    },
+    {
+      icon: <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><line x1="18" y1="20" x2="18" y2="10"/><line x1="12" y1="20" x2="12" y2="4"/><line x1="6" y1="20" x2="6" y2="14"/></svg>,
+      label: "Revenue breakdown",
+      sub: "By staff, source & method",
+      nav: "revenueDetail" as OpsView,
+    },
+    {
+      icon: <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M4 2v20l2-1 2 1 2-1 2 1 2-1 2 1 2-1 2 1V2l-2 1-2-1-2 1-2-1-2 1-2-1-2 1Z"/><line x1="8" y1="8" x2="16" y2="8"/><line x1="8" y1="12" x2="16" y2="12"/><line x1="8" y1="16" x2="12" y2="16"/></svg>,
+      label: "Expenses",
+      sub: `${fmtR(totalExpenses)} recorded`,
+      nav: "expenseList" as OpsView,
+    },
+    {
+      icon: <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/><polyline points="14 2 14 8 20 8"/><line x1="16" y1="13" x2="8" y2="13"/><line x1="16" y1="17" x2="8" y2="17"/><polyline points="10 9 9 9 8 9"/></svg>,
+      label: "Reports & exports",
+      sub: "CSV and PDF downloads",
+      nav: "financialReports" as OpsView,
+    },
   ]
 
   return (
@@ -209,7 +244,7 @@ export function FinancialsHubScreen({ onNav, onAppt }: { onNav: (v: OpsView) => 
             {quickLinks.map(l => (
               <button key={l.label} onClick={() => onNav(l.nav)}
                 className="flex items-center gap-3 p-4 bg-white rounded-2xl border border-gray-100 shadow-sm hover:border-gray-300 hover:shadow-md transition-all text-left group">
-                <span className="text-xl flex-shrink-0">{l.emoji}</span>
+                <span className="flex-shrink-0 text-gray-500 group-hover:text-gray-900 transition-colors">{l.icon}</span>
                 <div className="flex-1 min-w-0">
                   <p className="font-bold text-[14px] text-gray-900">{l.label}</p>
                   <p className="text-[12px] text-gray-500">{l.sub}</p>
@@ -343,7 +378,16 @@ export function PaymentListScreen({ onBack, onNav }: { onBack: () => void; onNav
         {loading ? (
           <div className="p-8 text-center text-gray-500">Loading payments...</div>
         ) : filtered.length === 0 ? (
-          <EmptyState icon="💳" title="No payments found" body="Payments appear here when customers pay for appointments." />
+          <EmptyState
+            icon={
+              <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+                <rect x="2" y="4" width="20" height="16" rx="2" />
+                <line x1="2" y1="10" x2="22" y2="10" />
+              </svg>
+            }
+            title="No payments found"
+            body="Payments appear here when customers pay for appointments."
+          />
         ) : (
           <div className="overflow-x-auto">
             <table className="w-full">
@@ -436,7 +480,15 @@ export function OutstandingPaymentsScreen({ onBack, onAppt, onRecord }: {
         {loading ? (
           <div className="p-8 text-center text-gray-500">Loading outstanding payments...</div>
         ) : outstanding.length === 0 ? (
-          <EmptyState icon="✅" title="No outstanding payments" body="All appointments are fully settled." />
+          <EmptyState
+            icon={
+              <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round">
+                <polyline points="20 6 9 17 4 12" />
+              </svg>
+            }
+            title="No outstanding payments"
+            body="All appointments are fully settled."
+          />
         ) : (
           <div className="divide-y divide-gray-50">
             {outstanding.map(a => {
@@ -534,7 +586,16 @@ export function RefundListScreen({ onBack, onRefund }: { onBack: () => void; onR
         {loading ? (
           <div className="p-8 text-center text-gray-500">Loading refunds...</div>
         ) : filtered.length === 0 ? (
-          <EmptyState icon="↩️" title="No refunds found" body="Refunds appear here when appointments are cancelled and a refund is owed." />
+          <EmptyState
+            icon={
+              <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+                <polyline points="9 14 4 9 9 4" />
+                <path d="M20 20v-7a4 4 0 0 0-4-4H4" />
+              </svg>
+            }
+            title="No refunds found"
+            body="Refunds appear here when appointments are cancelled and a refund is owed."
+          />
         ) : (
           <div className="divide-y divide-gray-50">
             {filtered.map(r => (
@@ -893,7 +954,16 @@ export function RevenueDetailScreen({ onBack }: { onBack: () => void }) {
             <p className="text-[13px] font-black uppercase tracking-widest text-gray-400 mb-3">Revenue by payment method</p>
             <Card>
               {methodRevenue.length === 0 ? (
-                <EmptyState icon="💳" title="No payment data" body="Payment method breakdown will appear once payments are recorded." />
+                <EmptyState
+                  icon={
+                    <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+                      <rect x="2" y="4" width="20" height="16" rx="2" />
+                      <line x1="2" y1="10" x2="22" y2="10" />
+                    </svg>
+                  }
+                  title="No payment data"
+                  body="Payment method breakdown will appear once payments are recorded."
+                />
               ) : (
                 <div className="divide-y divide-gray-50">
                   {methodRevenue.map(m => (
@@ -988,7 +1058,20 @@ export function ExpenseListScreen({ onBack, onAdd, onEdit }: {
         {loading ? (
           <div className="p-8 text-center text-gray-500">Loading expenses...</div>
         ) : expenses.length === 0 ? (
-          <EmptyState icon="🧾" title="No expenses yet" body="Track your salon costs to see your operating result." cta="Add expense" onCta={onAdd} />
+          <EmptyState
+            icon={
+              <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+                <path d="M4 2v20l2-1 2 1 2-1 2 1 2-1 2 1 2-1 2 1V2l-2 1-2-1-2 1-2-1-2 1-2-1-2 1Z" />
+                <line x1="8" y1="8" x2="16" y2="8" />
+                <line x1="8" y1="12" x2="16" y2="12" />
+                <line x1="8" y1="16" x2="12" y2="16" />
+              </svg>
+            }
+            title="No expenses yet"
+            body="Track your salon costs to see your operating result."
+            cta="Add expense"
+            onCta={onAdd}
+          />
         ) : (
           <div className="divide-y divide-gray-50">
             {expenses.map(e => (

@@ -155,7 +155,16 @@ export function AppointmentListScreen({ onNav, onAppt }: { onNav: (v: OpsView) =
 
       <Card>
         {appts.length === 0 ? (
-          <EmptyState icon="📋" title="No appointments" body="No appointments match the current filters." />
+          <EmptyState
+            icon={
+              <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+                <path d="M16 4h2a2 2 0 0 1 2 2v14a2 2 0 0 1-2 2H6a2 2 0 0 1-2-2V6a2 2 0 0 1 2-2h2" />
+                <rect x="8" y="2" width="8" height="4" rx="1" ry="1" />
+              </svg>
+            }
+            title="No appointments"
+            body="No appointments match the current filters."
+          />
         ) : (
           <div className="overflow-x-auto">
             <table className="w-full">
@@ -275,7 +284,11 @@ export function AppointmentDetailScreen({ apptRef, onBack, onNav }: {
       {/* Failed notification banner */}
       {hasFailedNotif && (
         <div className="flex items-start gap-3 bg-amber-50 border border-amber-100 rounded-2xl px-4 py-3.5 mb-4">
-          <span className="text-lg flex-shrink-0 mt-0.5">⚠️</span>
+          <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="#D97706" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" className="flex-shrink-0 mt-0.5">
+            <path d="m21.73 18-8-14a2 2 0 0 0-3.48 0l-8 14A2 2 0 0 0 4 21h16a2 2 0 0 0 1.73-3Z" />
+            <line x1="12" y1="9" x2="12" y2="13" />
+            <line x1="12" y1="17" x2="12.01" y2="17" />
+          </svg>
           <div className="flex-1">
             <p className="font-bold text-[13px] text-amber-900">Notification delivery failed</p>
             <p className="text-[12px] text-amber-700 mt-0.5">One or more notifications could not be delivered. See Notifications section below.</p>
@@ -417,9 +430,10 @@ export function AppointmentDetailScreen({ apptRef, onBack, onNav }: {
               ) : (
                 <button
                   onClick={() => onNav("completeAppt")}
-                  className="w-full py-3 bg-emerald-600 text-white rounded-xl text-[13px] font-bold hover:bg-emerald-700 transition-colors shadow-sm"
+                  className="w-full py-3 bg-emerald-600 text-white rounded-xl text-[13px] font-bold hover:bg-emerald-700 transition-colors shadow-sm inline-flex items-center justify-center gap-1.5"
                 >
-                  ✓ Complete appointment
+                  <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round"><polyline points="20 6 9 17 4 12" /></svg>
+                  Complete appointment
                 </button>
               )}
 
@@ -950,7 +964,12 @@ export function NoShowScreen({ apptRef, onBack, onDone }: { apptRef?: string; on
 
   if (confirmed) return (
     <div className="p-6 max-w-lg mx-auto flex flex-col items-center justify-center min-h-[60vh] text-center">
-      <div className="text-5xl mb-5">🕐</div>
+      <div className="w-16 h-16 rounded-2xl bg-gray-100 flex items-center justify-center text-gray-700 mb-5 shadow-xs">
+        <svg width="32" height="32" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+          <circle cx="12" cy="12" r="10" />
+          <polyline points="12 6 12 12 16 14" />
+        </svg>
+      </div>
       <h2 className="text-[20px] font-black text-gray-900 mb-2">Marked as no-show</h2>
       <p className="text-[13px] text-gray-500 mb-3">Appointment status updated to NO_SHOW.</p>
       <p className="text-[12px] text-gray-400 mb-8">This appointment will not count as completed revenue. Payment and refund handling is separate — no automatic refund has been triggered.</p>
@@ -1120,7 +1139,13 @@ export function RescheduleScreen({ apptRef, onBack, onDone }: { apptRef?: string
 
   if (stage === "conflict") return (
     <div className="p-6 max-w-lg mx-auto flex flex-col items-center min-h-[60vh] justify-center text-center">
-      <div className="text-5xl mb-5">⚠️</div>
+      <div className="w-16 h-16 rounded-2xl bg-amber-50 border border-amber-200 flex items-center justify-center text-amber-600 mb-5 shadow-xs">
+        <svg width="32" height="32" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+          <path d="m21.73 18-8-14a2 2 0 0 0-3.48 0l-8 14A2 2 0 0 0 4 21h16a2 2 0 0 0 1.73-3Z" />
+          <line x1="12" y1="9" x2="12" y2="13" />
+          <line x1="12" y1="17" x2="12.01" y2="17" />
+        </svg>
+      </div>
       <h2 className="text-[20px] font-black text-gray-900 mb-2">That time is no longer available</h2>
       <p className="text-[13px] text-gray-500 mb-2">Someone else just booked this slot or a schedule conflict occurred.</p>
       <p className="text-[13px] text-emerald-700 font-semibold mb-8">The original appointment remains unchanged.</p>
@@ -1494,7 +1519,14 @@ export function CreateApptScreen({ onBack, onDone, onNav }: {
           <div className="space-y-2">
             <button onClick={() => { setStaffChoice("any"); setStage("date") }}
               className={`w-full flex items-center gap-4 px-4 py-4 rounded-xl border-2 text-left transition-colors ${staffChoice === "any" ? "border-gray-900 bg-gray-900" : "border-gray-100 hover:border-gray-300"}`}>
-              <div className={`w-10 h-10 rounded-full flex items-center justify-center text-xl ${staffChoice === "any" ? "bg-white/10" : "bg-gray-100"}`}>👥</div>
+              <div className={`w-10 h-10 rounded-full flex items-center justify-center ${staffChoice === "any" ? "bg-white/10 text-white" : "bg-gray-100 text-gray-600"}`}>
+                <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+                  <path d="M16 21v-2a4 4 0 0 0-4-4H6a4 4 0 0 0-4 4v2" />
+                  <circle cx="9" cy="7" r="4" />
+                  <path d="M22 21v-2a4 4 0 0 0-3-3.87" />
+                  <path d="M16 3.13a4 4 0 0 1 0 7.75" />
+                </svg>
+              </div>
               <div>
                 <p className={`font-semibold text-[14px] ${staffChoice === "any" ? "text-white" : "text-gray-900"}`}>Any available</p>
                 <p className={`text-[12px] ${staffChoice === "any" ? "text-white/60" : "text-gray-500"}`}>Use salon assignment rule</p>
